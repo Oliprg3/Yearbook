@@ -9,15 +9,15 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// CORS configuration - allow your frontend domain
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://novus-yearbook.onrender.com', 'https://yearbook2.onrender.com'],
+    origin: ['https://novus-yearbook.onrender.com', 'http://localhost:3000'],
     credentials: true
 }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Configure multer for file uploads
+// Multer configuration for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, 'uploads'));
@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -50,7 +50,6 @@ app.locals.upload = upload;
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/posts', require('./routes/posts'));
-app.use('/api/theme', require('./routes/theme'));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
@@ -58,4 +57,4 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
