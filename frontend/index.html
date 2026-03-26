@@ -21,6 +21,7 @@
         }
     </script>
     <style>
+        /* All styles remain exactly as before – unchanged */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -424,11 +425,13 @@
     </div>
 
     <script>
-        // --- DATA MODELS ---
-        let yearbookStudents = [];
-        let users = [];
-        let memories = [];
+        // ========== BACKEND CONFIGURATION ==========
+        const API_BASE = 'https://yearbook2.onrender.com/api';
+
+        let token = localStorage.getItem('token');
         let currentUser = null;
+        let allStudents = [];   // only regular users (non-admin)
+        let allMemories = [];
 
         // Helper: escape HTML
         function escapeHtml(str = '') {
@@ -440,64 +443,67 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // Load initial data from localStorage
-        function loadData() {
-            const storedStudents = localStorage.getItem('11g_yearbook_students');
-            const storedUsers = localStorage.getItem('11g_users');
-            const storedMemories = localStorage.getItem('11g_memories');
-
-            if (storedStudents) {
-                try { yearbookStudents = JSON.parse(storedStudents); } catch { yearbookStudents = []; }
-            } else {
-                yearbookStudents = [];
-                localStorage.setItem('11g_yearbook_students', JSON.stringify(yearbookStudents));
+        // Helper: fetch with auth header
+        async function authFetch(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(token && { 'x-auth-token': token }),
+                ...options.headers
+            };
+            const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
             }
+            return res.json();
+        }
 
-            if (storedUsers) {
-                try { users = JSON.parse(storedUsers); } catch { users = []; }
-            } else {
-                users = [{ email: 'admin@novus.com', password: 'admin123', name: 'Administrator', isAdmin: true }];
-                localStorage.setItem('11g_users', JSON.stringify(users));
-            }
-
-            if (storedMemories) {
-                try { memories = JSON.parse(storedMemories); } catch { memories = []; }
-            } else {
-                memories = [];
-                localStorage.setItem('11g_memories', JSON.stringify(memories));
+        // ========== DATA LOADING ==========
+        async function loadAllData() {
+            if (!token) return;
+            try {
+                // Get current user
+                const userData = await authFetch('/auth/me');
+                currentUser = userData;
+                // Check if admin
+                const isAdmin = currentUser.email === 'admin@newayacademy.com'; // adjust if needed
+                document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
+                // Load all users (students)
+                const allUsers = await authFetch('/profile/all');
+                // Filter out admin users – only keep non‑admin users as students
+                allStudents = allUsers.filter(u => !u.isAdmin);
+                // Load memories
+                allMemories = await authFetch('/posts');
+                renderAllViews();
+            } catch (err) {
+                console.error('Failed to load data:', err);
+                alert('Failed to load data. Please check your connection.');
             }
         }
 
-        function saveStudents() { localStorage.setItem('11g_yearbook_students', JSON.stringify(yearbookStudents)); }
-        function saveUsers() { localStorage.setItem('11g_users', JSON.stringify(users)); }
-        function saveMemories() { localStorage.setItem('11g_memories', JSON.stringify(memories)); }
-        function generateId() { return Date.now().toString() + Math.random().toString(36).substr(2, 5); }
-
-        function fileToDataURL(file) {
-            return new Promise((resolve) => {
-                if (!file) return resolve(null);
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // --- AUTHENTICATION ---
+        // ========== AUTHENTICATION ==========
         async function handleLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             if (!email || !password) return alert('Please fill all fields');
 
-            const user = users.find(u => u.email === email && u.password === password);
-            if (!user) return alert('Invalid credentials. Try admin@novus.com / admin123 or sign up.');
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.msg || 'Login failed');
 
-            currentUser = user;
-            localStorage.setItem('currentUser', JSON.stringify({ email: user.email, name: user.name, isAdmin: user.isAdmin }));
-            document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=8b5cf6&color=fff`;
-            document.getElementById('adminNavBtn').classList.toggle('hidden', !user.isAdmin);
-            closeLogin();
-            renderAllViews();
-            showView('home');
+                token = data.token;
+                localStorage.setItem('token', token);
+                await loadAllData();
+                closeLogin();
+                showView('home');
+            } catch (err) {
+                alert(err.message);
+            }
         }
 
         async function handleSignup() {
@@ -505,12 +511,24 @@
             const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
             if (!name || !email || !password) return alert('Please fill all fields');
-            if (users.some(u => u.email === email)) return alert('Email already exists');
 
-            users.push({ email, password, name, isAdmin: false });
-            saveUsers();
-            alert('Account created! Please sign in.');
-            switchToLogin();
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, year: 2027 })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.msg || 'Registration failed');
+
+                token = data.token;
+                localStorage.setItem('token', token);
+                await loadAllData();
+                closeLogin();
+                showView('home');
+            } catch (err) {
+                alert(err.message);
+            }
         }
 
         function switchToSignup() {
@@ -526,7 +544,7 @@
         function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
         function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
 
-        // --- SIDEBAR & VIEW HELPERS ---
+        // ========== SIDEBAR & VIEW HELPERS ==========
         let isSidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
         function toggleSidebar() {
             isSidebarCollapsed = !isSidebarCollapsed;
@@ -594,9 +612,11 @@
             closeMobileSidebar();
         }
 
-        // --- STUDENT MANAGEMENT (admin only) ---
+        // ========== ADMIN FUNCTIONS (students) ==========
         async function addStudentFromForm() {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can add students');
+            if (!currentUser || currentUser.email !== 'admin@newayacademy.com') {
+                return alert('Only admin can add students');
+            }
 
             const name = document.getElementById('newName').value.trim();
             const email = document.getElementById('newEmail').value.trim();
@@ -609,60 +629,92 @@
 
             if (!name || !email) return alert('Name and email required');
 
-            let profileImage = null;
-            if (photoFile) profileImage = await fileToDataURL(photoFile);
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('email', email);
+            formData.append('password', 'student123'); // default password
+            formData.append('quote', quote);
+            formData.append('dream', dream);
+            formData.append('hobby', hobby);
+            formData.append('aspiration', aspiration);
+            formData.append('funFact', funFact);
+            if (photoFile) formData.append('profileImage', photoFile);
 
-            yearbookStudents.push({ id: generateId(), name, email, quote, dream, hobby, aspiration, funFact, profileImage });
-            saveStudents();
-            renderAllViews();
-
-            // Clear form
-            document.getElementById('newName').value = '';
-            document.getElementById('newEmail').value = '';
-            document.getElementById('newQuote').value = '';
-            document.getElementById('newDream').value = '';
-            document.getElementById('newHobby').value = '';
-            document.getElementById('newAspiration').value = '';
-            document.getElementById('newFunFact').value = '';
-            document.getElementById('newPhoto').value = '';
-            document.getElementById('file-name').innerText = 'No file chosen';
-            alert('Student added to yearbook');
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'x-auth-token': token },
+                    body: formData
+                });
+                if (!res.ok) throw new Error(await res.text());
+                alert('Student added');
+                await loadAllData(); // refresh lists
+                // Clear form
+                document.getElementById('newName').value = '';
+                document.getElementById('newEmail').value = '';
+                document.getElementById('newQuote').value = '';
+                document.getElementById('newDream').value = '';
+                document.getElementById('newHobby').value = '';
+                document.getElementById('newAspiration').value = '';
+                document.getElementById('newFunFact').value = '';
+                document.getElementById('newPhoto').value = '';
+                document.getElementById('file-name').innerText = 'No file chosen';
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
 
         async function editStudent(id) {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can edit');
-            const student = yearbookStudents.find(s => s.id === id);
+            if (!currentUser || currentUser.email !== 'admin@newayacademy.com') {
+                return alert('Only admin can edit');
+            }
+            const student = allStudents.find(s => s.id === id);
             if (!student) return;
 
             const newName = prompt('New name', student.name);
-            if (newName) {
-                student.name = newName;
-                const newQuote = prompt('Quote', student.quote || '');
-                if (newQuote !== null) student.quote = newQuote;
-                const newDream = prompt('Dream', student.dream || '');
-                if (newDream !== null) student.dream = newDream;
-                const newHobby = prompt('Hobby', student.hobby || '');
-                if (newHobby !== null) student.hobby = newHobby;
-                const newAspiration = prompt('Aspiration', student.aspiration || '');
-                if (newAspiration !== null) student.aspiration = newAspiration;
-                const newFunFact = prompt('Fun Fact', student.funFact || '');
-                if (newFunFact !== null) student.funFact = newFunFact;
-                saveStudents();
-                renderAllViews();
+            if (!newName) return;
+            const newQuote = prompt('Quote', student.quote || '');
+            const newDream = prompt('Dream', student.dream || '');
+            const newHobby = prompt('Hobby', student.hobby || '');
+            const newAspiration = prompt('Aspiration', student.aspiration || '');
+            const newFunFact = prompt('Fun Fact', student.funFact || '');
+
+            try {
+                await authFetch(`/profile/update/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        name: newName,
+                        quote: newQuote,
+                        dream: newDream,
+                        hobby: newHobby,
+                        aspiration: newAspiration,
+                        funFact: newFunFact
+                    })
+                });
+                await loadAllData();
+            } catch (err) {
+                alert('Update failed: ' + err.message);
             }
         }
 
         async function deleteStudent(id) {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete');
+            if (!currentUser || currentUser.email !== 'admin@newayacademy.com') {
+                return alert('Only admin can delete');
+            }
             if (!confirm('Delete this student?')) return;
-            yearbookStudents = yearbookStudents.filter(s => s.id !== id);
-            saveStudents();
-            renderAllViews();
+            try {
+                await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' });
+                await loadAllData();
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+            }
         }
 
-        // --- MEMORY MANAGEMENT (admin only) ---
+        // ========== MEMORY FUNCTIONS ==========
         async function createPostFromForm() {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can create memories');
+            if (!currentUser || currentUser.email !== 'admin@newayacademy.com') {
+                return alert('Only admin can create memories');
+            }
 
             const title = document.getElementById('postTitle').value.trim();
             const content = document.getElementById('postContent').value.trim();
@@ -670,46 +722,54 @@
 
             if (!title) return alert('Title required');
 
-            let imageUrl = null;
-            if (imageFile) imageUrl = await fileToDataURL(imageFile);
+            const formData = new FormData();
+            formData.append('content', `${title}\n${content}`);
+            if (imageFile) formData.append('image', imageFile);
 
-            const newPost = {
-                id: generateId(),
-                title: title,
-                content: content,
-                image: imageUrl,
-                createdAt: new Date().toISOString()
-            };
-
-            memories.unshift(newPost);
-            saveMemories();
-            renderAllViews();
-
-            document.getElementById('postTitle').value = '';
-            document.getElementById('postContent').value = '';
-            document.getElementById('postImage').value = '';
-            document.getElementById('post-file-name').innerText = 'No file chosen';
-            alert('Memory added!');
-            showView('memories');
+            try {
+                const res = await fetch(`${API_BASE}/posts/create`, {
+                    method: 'POST',
+                    headers: { 'x-auth-token': token },
+                    body: formData
+                });
+                if (!res.ok) throw new Error(await res.text());
+                alert('Memory added!');
+                await loadAllData();
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                document.getElementById('postImage').value = '';
+                document.getElementById('post-file-name').innerText = 'No file chosen';
+                showView('memories');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
 
-        function deleteMemory(id) {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete memories');
+        async function deleteMemory(id) {
+            if (!currentUser || currentUser.email !== 'admin@newayacademy.com') {
+                return alert('Only admin can delete memories');
+            }
             if (!confirm('Delete this memory?')) return;
-            memories = memories.filter(m => m.id !== id);
-            saveMemories();
-            renderAllViews();
-            showView('memories');
+            try {
+                await authFetch(`/posts/${id}`, { method: 'DELETE' });
+                await loadAllData();
+                showView('memories');
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+            }
         }
 
-        // --- RENDER FUNCTIONS (same as before, omitted for brevity, but must be included) ---
-        // For brevity, I will include the full render functions from the previous working version.
-        // They are identical to the last working version except we now have empty initial data.
-        // I'll copy them from the previous correct version.
+        // ========== RENDER FUNCTIONS ==========
+        // (All render functions are identical to the previous working version,
+        //  but now they use allStudents and allMemories from the backend.)
+        // I'll reuse the exact same render functions from the previous code,
+        // because they are already correct. For brevity, I will embed them here.
+        // They are the same as in the user's current HTML, just referencing the global arrays.
+        // (To avoid repetition, I'll include them as they were, but ensure they use the global arrays.)
 
         function renderHome() {
-            const studentCount = yearbookStudents.length;
-            const postCount = memories.length;
+            const studentCount = allStudents.length;
+            const postCount = allMemories.length;
             const gradDate = new Date('2027-06-15');
             const daysLeft = Math.ceil((gradDate - new Date()) / (1000 * 60 * 60 * 24));
 
@@ -793,7 +853,7 @@
                     <div class="relative h-full flex flex-col justify-end p-4">
                         <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold w-fit mb-2">Featured</span>
                         <h3 class="text-lg font-bold text-white">Recent Memory</h3>
-                        <p class="text-white/80 text-sm">${escapeHtml(memories[0]?.title || 'Share your story')}</p>
+                        <p class="text-white/80 text-sm">${escapeHtml(allMemories[0]?.content?.split('\n')[0] || 'Share your story')}</p>
                     </div>
                 </div>
                 <div class="bento-item text-center">
@@ -829,13 +889,13 @@
                 </div>
             `;
 
-            const recent = memories.slice(0, 3);
+            const recent = allMemories.slice(0, 3);
             document.getElementById('recentMemoriesHome').innerHTML = recent.length ? recent.map(p => `
                 <div class="group cursor-pointer" onclick="showView('memories')">
                     <div class="overflow-hidden rounded-2xl relative">
                         <img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="w-full h-48 object-cover transition-transform group-hover:scale-105">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4">
-                            <p class="text-white font-bold">${escapeHtml(p.title || 'Memory')}</p>
+                            <p class="text-white font-bold">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p>
                         </div>
                     </div>
                 </div>
@@ -844,7 +904,7 @@
 
         function renderStudents() {
             const grid = document.getElementById('view-students');
-            if (yearbookStudents.length === 0) {
+            if (allStudents.length === 0) {
                 grid.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-10 text-center text-[var(--text-muted)]">No students added yet. Admin can add them.</div>`;
                 return;
             }
@@ -869,7 +929,7 @@
         function renderStudentGrid(filter = '') {
             const container = document.getElementById('studentGrid');
             if (!container) return;
-            const filtered = yearbookStudents.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
+            const filtered = allStudents.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
             container.innerHTML = filtered.map(s => `
                 <div class="student-card bg-[var(--surface-solid)] rounded-3xl p-5 flex flex-col items-center border border-[var(--border-line)] interactive-card cursor-pointer" onclick="openStudentModal('${s.id}')">
                     <img src="${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff`}" class="w-20 h-20 rounded-full object-cover border-4 border-[var(--bg)] shadow-lg">
@@ -881,7 +941,7 @@
         window.filterStudents = (q) => renderStudentGrid(q);
 
         function openStudentModal(id) {
-            const s = yearbookStudents.find(st => st.id === id);
+            const s = allStudents.find(st => st.id === id);
             if (!s) return;
             const modalHtml = `
                 <div id="studentModal" class="profile-modal active" onclick="closeStudentModal()">
@@ -921,7 +981,7 @@
 
         function renderMemories() {
             const container = document.getElementById('view-memories');
-            if (memories.length === 0) {
+            if (allMemories.length === 0) {
                 container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]"><i class="fas fa-camera text-4xl mb-3 opacity-50"></i><p>No memories yet. Admin can add special moments.</p></div>`;
                 return;
             }
@@ -933,16 +993,16 @@
                             <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1>
                             <p class="text-[var(--text-muted)] mt-2">Captured moments from our Novus journey</p>
                         </div>
-                        ${currentUser && currentUser.isAdmin ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}
+                        ${currentUser && currentUser.email === 'admin@newayacademy.com' ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}
                     </div>
                     <div class="masonry" id="memoryGrid"></div>
                 </div>
             `;
 
             const grid = document.getElementById('memoryGrid');
-            grid.innerHTML = memories.map((p) => {
-                const title = escapeHtml(p.title || 'Memory');
-                const desc = escapeHtml(p.content || '');
+            grid.innerHTML = allMemories.map((p) => {
+                const title = escapeHtml(p.content?.split('\n')[0] || 'Memory');
+                const desc = escapeHtml(p.content?.split('\n').slice(1).join(' ') || '');
                 const image = p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800';
                 return `
                     <div class="masonry-item memory-card group cursor-pointer">
@@ -955,7 +1015,7 @@
                                     <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold">
                                         <i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}
                                     </span>
-                                    ${currentUser && currentUser.isAdmin ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
+                                    ${currentUser && currentUser.email === 'admin@newayacademy.com' ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -966,7 +1026,7 @@
 
         function renderEvents() {
             const container = document.getElementById('view-events');
-            if (memories.length === 0) {
+            if (allMemories.length === 0) {
                 container.innerHTML = `<div class="max-w-4xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">No events yet. Create memories to see timeline.</div>`;
                 return;
             }
@@ -977,15 +1037,15 @@
                 </div>
             `;
             const grid = document.getElementById('eventGrid');
-            grid.innerHTML = memories.map(p => `
+            grid.innerHTML = allMemories.map(p => `
                 <div class="relative mb-8 group">
                     <div class="timeline-dot"></div>
                     <div class="glass rounded-2xl border border-[var(--border-line)] overflow-hidden w-full md:w-[85%] ml-auto hover:-translate-y-2 transition">
                         <div class="p-5">
                             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase mb-3">${new Date(p.createdAt).toLocaleDateString()}</div>
-                            <h3 class="font-bold text-xl mb-2">${escapeHtml(p.title || 'Memory')}</h3>
-                            <p class="text-[var(--text-muted)]">${escapeHtml(p.content || '')}</p>
-                            ${currentUser && currentUser.isAdmin ? `<button class="danger-btn mt-4" onclick="deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
+                            <h3 class="font-bold text-xl mb-2">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</h3>
+                            <p class="text-[var(--text-muted)]">${escapeHtml(p.content?.split('\n').slice(1).join(' ') || '')}</p>
+                            ${currentUser && currentUser.email === 'admin@newayacademy.com' ? `<button class="danger-btn mt-4" onclick="deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -1001,7 +1061,7 @@
                 </div>
             `;
             const grid = document.getElementById('storiesGrid');
-            grid.innerHTML = yearbookStudents.map(s => `
+            grid.innerHTML = allStudents.map(s => `
                 <div class="glass rounded-2xl p-6 cursor-pointer interactive-card" onclick="openStudentModal('${s.id}')">
                     <i class="fas fa-quote-left text-3xl text-[var(--primary)]/30 mb-3"></i>
                     <p class="text-lg font-medium mb-4">"${escapeHtml(s.quote || 'No quote yet')}"</p>
@@ -1017,12 +1077,12 @@
         }
 
         function renderAdminPanel() {
-            if (!currentUser || !currentUser.isAdmin) {
+            if (!currentUser || currentUser.email !== 'admin@newayacademy.com') {
                 document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Access denied. Admin only.</div>`;
                 return;
             }
 
-            const studentListHtml = yearbookStudents.map(s => `
+            const studentListHtml = allStudents.map(s => `
                 <div class="flex justify-between items-center p-3 border-b border-[var(--border-line)]">
                     <span>${escapeHtml(s.name)} (${escapeHtml(s.email)})</span>
                     <div>
@@ -1100,25 +1160,23 @@
         }
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             if (localStorage.getItem('theme') === 'light') {
                 document.documentElement.classList.remove('dark');
                 document.getElementById('themeIcon').className = 'fas fa-moon text-lg';
             }
             if (isSidebarCollapsed) toggleSidebar();
-            loadData();
 
-            const storedUser = localStorage.getItem('currentUser');
-            if (storedUser) {
+            token = localStorage.getItem('token');
+            if (token) {
                 try {
-                    currentUser = JSON.parse(storedUser);
-                    document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=8b5cf6&color=fff`;
-                    document.getElementById('adminNavBtn').classList.toggle('hidden', !currentUser.isAdmin);
+                    await loadAllData();
                     closeLogin();
-                    renderAllViews();
                     showView('home');
-                } catch {
-                    localStorage.removeItem('currentUser');
+                } catch (err) {
+                    console.error(err);
+                    localStorage.removeItem('token');
+                    token = null;
                     openLogin();
                 }
             } else {
@@ -1132,6 +1190,8 @@
         window.deleteStudent = deleteStudent;
         window.showView = showView;
         window.closeStudentModal = closeStudentModal;
+        window.addStudentFromForm = addStudentFromForm;
+        window.createPostFromForm = createPostFromForm;
     </script>
 </body>
 </html>
