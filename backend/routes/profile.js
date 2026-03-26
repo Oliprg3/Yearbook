@@ -28,7 +28,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Update user profile
+// Update user profile (admin only)
 router.put('/update/:id', auth, async (req, res) => {
     try {
         const { name, quote, dream, hobby, aspiration, funFact, profileImage } = req.body;
@@ -59,10 +59,9 @@ router.put('/update/:id', auth, async (req, res) => {
     }
 });
 
-// Deactivate/Delete user (soft delete or hard delete)
+// Delete user (admin only)
 router.delete('/deactivate/:id', auth, async (req, res) => {
     try {
-        // Check if user is admin
         const requestingUser = await User.findById(req.user.id);
         if (!requestingUser.isAdmin) {
             return res.status(403).json({ msg: 'Not authorized' });
