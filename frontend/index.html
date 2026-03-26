@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Novus | 11G Yearbook • Class of 2026/27</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -111,6 +110,7 @@
             height: 100vh;
             z-index: 50;
             transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateX(0);
         }
         .sidebar-expanded { width: 280px; }
         .sidebar-collapsed { width: 80px; }
@@ -176,6 +176,8 @@
         @media (max-width: 1024px) {
             .bento-grid { grid-template-columns: repeat(2, 1fr); }
             .main-content { margin-left: 0 !important; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+            .sidebar.mobile-open { transform: translateX(0); }
         }
         @media (max-width: 640px) {
             .bento-grid { grid-template-columns: 1fr; }
@@ -447,7 +449,6 @@
             if (storedStudents) {
                 try { yearbookStudents = JSON.parse(storedStudents); } catch { yearbookStudents = []; }
             } else {
-                // Start with empty array — no default students
                 yearbookStudents = [];
                 localStorage.setItem('11g_yearbook_students', JSON.stringify(yearbookStudents));
             }
@@ -462,7 +463,6 @@
             if (storedMemories) {
                 try { memories = JSON.parse(storedMemories); } catch { memories = []; }
             } else {
-                // Start with empty array — no default memories
                 memories = [];
                 localStorage.setItem('11g_memories', JSON.stringify(memories));
             }
@@ -551,12 +551,17 @@
         }
 
         function openMobileSidebar() {
-            document.getElementById('mobileOverlay').classList.add('active');
-            document.getElementById('sidebar').style.transform = 'translateX(0)';
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.add('mobile-open');
+            overlay.classList.add('active');
         }
+
         function closeMobileSidebar() {
-            document.getElementById('mobileOverlay').classList.remove('active');
-            document.getElementById('sidebar').style.transform = '';
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
         }
 
         function toggleTheme() {
@@ -697,7 +702,11 @@
             showView('memories');
         }
 
-        // --- RENDER FUNCTIONS ---
+        // --- RENDER FUNCTIONS (same as before, omitted for brevity, but must be included) ---
+        // For brevity, I will include the full render functions from the previous working version.
+        // They are identical to the last working version except we now have empty initial data.
+        // I'll copy them from the previous correct version.
+
         function renderHome() {
             const studentCount = yearbookStudents.length;
             const postCount = memories.length;
@@ -1126,4 +1135,3 @@
     </script>
 </body>
 </html>
-```
