@@ -9,7 +9,7 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration - allow your frontend domain
+// CORS configuration
 app.use(cors({
     origin: ['https://novus-yearbook.onrender.com', 'http://localhost:3000'],
     credentials: true
@@ -17,7 +17,7 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Multer configuration for file uploads
+// Multer configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, 'uploads'));
@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -43,18 +43,37 @@ const upload = multer({
     }
 });
 
-// Make upload available in routes
 app.locals.upload = upload;
+
+// ------------------- TEST ENDPOINT -------------------
+app.get('/api/test-db', async (req, res) => {
+    try {
+        const User = require('./models/User');
+        const count = await User.countDocuments();
+        res.json({ success: true, userCount: count });
+    } catch (err) {
+        console.error('Test DB error:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+// -----------------------------------------------------
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/posts', require('./routes/posts'));
 
-// MongoDB connection
+// MongoDB connection with detailed logging
+console.log('🔄 Attempting to connect to MongoDB...');
+console.log('MONGO_URI exists:', !!process.env.MONGO_URI);
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected successfully'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+  .catch(err => {
+    console.error('❌ MongoDB connection error:');
+    console.error('  Message:', err.message);
+    console.error('  Full error:', err);
+  });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
