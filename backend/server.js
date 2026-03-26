@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const multer = require('multer');
+const bcrypt = require('bcryptjs');          // <-- added
 
 dotenv.config();
 
@@ -45,7 +46,7 @@ const upload = multer({
 
 app.locals.upload = upload;
 
-// ------------------- TEST ENDPOINT -------------------
+// Test endpoint (optional)
 app.get('/api/test-db', async (req, res) => {
     try {
         const User = require('./models/User');
@@ -56,23 +57,44 @@ app.get('/api/test-db', async (req, res) => {
         res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
-// -----------------------------------------------------
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/posts', require('./routes/posts'));
 
-// MongoDB connection with detailed logging
+// ========== MONGODB CONNECTION + ADMIN CREATION ==========
 console.log('🔄 Attempting to connect to MongoDB...');
 console.log('MONGO_URI exists:', !!process.env.MONGO_URI);
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected successfully'))
+  .then(async () => {
+      console.log('✅ MongoDB connected successfully');
+
+      // Create admin user if not exists
+      const User = require('./models/User');
+      const adminExists = await User.findOne({ email: 'admin@newayacademy.com' });
+
+      if (!adminExists) {
+          const hashedPassword = await bcrypt.hash('admin123', 10);
+          await User.create({
+              name: 'Administrator',
+              email: 'admin@newayacademy.com',
+              password: hashedPassword,
+              isAdmin: true,
+              year: 2027
+          });
+          console.log('✅ Admin user created with email: admin@newayacademy.com');
+      } else {
+          // Optional: if admin exists but password hash might be wrong, you could update it here.
+          // For simplicity, we'll keep existing. If login still fails, delete the old admin document and let this recreate it.
+          console.log('👑 Admin user already exists');
+      }
+  })
   .catch(err => {
-    console.error('❌ MongoDB connection error:');
-    console.error('  Message:', err.message);
-    console.error('  Full error:', err);
+      console.error('❌ MongoDB connection error:');
+      console.error('  Message:', err.message);
+      console.error('  Full error:', err);
   });
 
 const PORT = process.env.PORT || 5000;
