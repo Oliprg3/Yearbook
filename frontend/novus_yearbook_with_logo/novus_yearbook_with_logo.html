@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novus | 11G Yearbook • Class of 2026/27</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8b5cf6',
+                        secondary: '#d946ef',
+                        accent: '#06b6d4',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f8fafc;
+            --surface: rgba(255, 255, 255, 0.85);
+            --surface-solid: #ffffff;
+            --surface-hover: rgba(241, 245, 249, 1);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-line: rgba(0, 0, 0, 0.08);
+            --glass-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+            --primary: #8b5cf6;
+            --secondary: #d946ef;
+            --accent: #06b6d4;
+        }
+        .dark {
+            --bg: #0a0812;
+            --surface: rgba(21, 18, 33, 0.85);
+            --surface-solid: #151221;
+            --surface-hover: rgba(28, 24, 43, 1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-line: rgba(255, 255, 255, 0.05);
+            --glass-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+        .aurora-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -2;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .aurora-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: moveBlobs 20s infinite alternate;
+        }
+        .blob-1 { width: 600px; height: 600px; background: linear-gradient(135deg, #8b5cf6, #d946ef); top: -200px; left: -200px; }
+        .blob-2 { width: 500px; height: 500px; background: linear-gradient(135deg, #06b6d4, #8b5cf6); bottom: -150px; right: -100px; animation-delay: -5s; }
+        .blob-3 { width: 400px; height: 400px; background: linear-gradient(135deg, #d946ef, #f472b6); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -10s; }
+        @keyframes moveBlobs {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -30px) scale(1.1); }
+        }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0.03; z-index: -1; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        .glass {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-line);
+            box-shadow: var(--glass-shadow);
+        }
+        .glass-strong {
+            background: rgba(21, 18, 33, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #8b5cf6, #d946ef, #06b6d4, #8b5cf6);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 8s ease infinite;
+        }
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            z-index: 50;
+            transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .sidebar-expanded { width: 280px; }
+        .sidebar-collapsed { width: 80px; }
+        .sidebar-toggle-btn {
+            position: absolute;
+            right: -12px;
+            top: 80px;
+            width: 24px; height: 24px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            transition: all 0.2s ease;
+            z-index: 50;
+        }
+        .sidebar-toggle-btn:hover { transform: scale(1.1); }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            border-radius: 0.75rem;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            width: 100%;
+            background: transparent;
+            cursor: pointer;
+        }
+        .nav-link:hover {
+            background: var(--surface-hover);
+            color: var(--text-main);
+        }
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(217, 70, 239, 0.05));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: var(--text-main);
+        }
+        .nav-link.active i { color: var(--primary); }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .main-content.collapsed { margin-left: 80px; }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        .bento-item {
+            background: var(--surface);
+            border-radius: 24px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-line);
+            transition: all 0.3s ease;
+        }
+        .bento-item:hover {
+            transform: translateY(-4px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.2);
+        }
+        .bento-large { grid-column: span 2; grid-row: span 2; }
+        .bento-wide { grid-column: span 2; }
+        .bento-tall { grid-row: span 2; }
+        @media (max-width: 1024px) {
+            .bento-grid { grid-template-columns: repeat(2, 1fr); }
+            .main-content { margin-left: 0 !important; }
+        }
+        @media (max-width: 640px) {
+            .bento-grid { grid-template-columns: 1fr; }
+            .bento-large, .bento-wide { grid-column: span 1; }
+        }
+        .masonry { column-count: 1; column-gap: 1.5rem; }
+        .masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
+        @media (min-width: 640px) { .masonry { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry { column-count: 3; } }
+        .timeline-container { position: relative; padding-left: 2rem; }
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, #8b5cf6, #d946ef, #06b6d4, transparent);
+        }
+        .timeline-dot {
+            position: absolute;
+            left: -5px;
+            width: 14px; height: 14px;
+            background: var(--bg);
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            top: 24px;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+        .animate-pulse-glow { animation: pulseGlow 4s ease-in-out infinite; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #8b5cf6, #d946ef);
+            border-radius: 4px;
+        }
+        .kinetic-title {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+        .interactive-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .interactive-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px -15px rgba(139, 92, 246, 0.3);
+        }
+        .glow-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .glow-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .glow-btn:hover::before { left: 100%; }
+        .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 40;
+            display: none;
+        }
+        .mobile-overlay.active { display: block; }
+        .view-section { display: none; animation: fadeInUp 0.4s ease-out; }
+        .view-section.active { display: block; }
+        .stat-number { font-variant-numeric: tabular-nums; }
+        .profile-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+        }
+        .profile-modal.active { display: flex; }
+        .profile-card {
+            max-width: 550px;
+            width: 90%;
+            background: var(--surface-solid);
+            border-radius: 2rem;
+            border: 1px solid var(--border-line);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .file-upload-btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        .file-upload-btn:hover {
+            background: #7c3aed;
+            transform: translateY(-1px);
+        }
+        .file-name {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+        }
+        .hero-logo {
+            width: min(420px, 75vw);
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 18px 40px rgba(139, 92, 246, 0.35));
+            margin: 0 auto 1.25rem;
+            display: block;
+        }
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 20px;
+            box-shadow: 0 18px 35px rgba(0,0,0,0.35);
+        }
+        .hero-logo-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* hide main content until login */
+        .main-content.hidden-content {
+            filter: blur(4px);
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div class="aurora-bg"><div class="aurora-blob blob-1"></div><div class="aurora-blob blob-2"></div><div class="aurora-blob blob-3"></div></div>
+    <div class="noise-overlay"></div>
+    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
+
+    <aside class="sidebar sidebar-expanded glass border-r border-[var(--border-line)] flex flex-col" id="sidebar">
+        <button class="sidebar-toggle-btn hidden md:flex" onclick="toggleSidebar()"><i class="fas fa-chevron-left text-xs" id="toggleIcon"></i></button>
+        <div class="flex items-center justify-between px-6 py-6">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="showView('home')">
+                <img src="novus.jpg" alt="Novus logo" class="brand-logo">
+                <span class="font-bold text-lg tracking-wide text-[var(--text-main)] sidebar-text">Novus</span>
+            </div>
+            <button onclick="closeMobileSidebar()" class="md:hidden text-[var(--text-muted)]"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <nav class="flex-1 px-3 space-y-1 overflow-y-auto">
+            <button class="nav-link active" data-view="home" onclick="showView('home')"><div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--primary)] rounded-r-full"></div><i class="fas fa-home text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Home</span></button>
+            <button class="nav-link" data-view="students" onclick="showView('students')"><i class="fas fa-user-friends text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Students</span></button>
+            <button class="nav-link" data-view="memories" onclick="showView('memories')"><i class="fas fa-images text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Memories</span></button>
+            <button class="nav-link" data-view="events" onclick="showView('events')"><i class="far fa-calendar-alt text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Special Events</span></button>
+            <button class="nav-link" data-view="quotes" onclick="showView('quotes')"><i class="fas fa-quote-right text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Student Stories</span></button>
+            <button id="adminNavBtn" class="nav-link hidden" data-view="admin" onclick="showView('admin')"><i class="fas fa-crown text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Admin Panel</span></button>
+        </nav>
+        <div class="px-4 pb-6 countdown-widget">
+            <div class="glass-strong rounded-2xl p-4 text-center">
+                <p class="text-xs text-[var(--text-muted)] mb-1">11G • Class of 2026/27</p>
+                <div class="text-xl font-bold gradient-text">Rising Stars</div>
+                <div class="mt-2 text-xs text-[var(--text-muted)]">📘 Junior Yearbook</div>
+            </div>
+        </div>
+        <div class="px-4 pb-6 countdown-icon hidden justify-center"><div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-school"></i></div></div>
+    </aside>
+
+    <div class="main-content flex flex-col h-full" id="mainContent">
+        <header class="flex items-center justify-between px-6 py-4 glass border-b border-[var(--border-line)] sticky top-0 z-30">
+            <div class="flex items-center gap-4">
+                <button onclick="openMobileSidebar()" class="md:hidden text-[var(--text-muted)] w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[var(--surface-hover)]"><i class="fas fa-bars text-lg"></i></button>
+                <div class="hidden md:flex items-center gap-3">
+                    <span class="font-semibold text-[var(--text-main)] tracking-wide text-sm">Novus - 11G Yearbook • Class of 2026/27</span>
+                    <span class="px-2 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold border border-[var(--primary)]/20">11G</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center text-[var(--text-muted)] rounded-xl hover:bg-[var(--surface-hover)]"><i class="fas fa-moon text-lg" id="themeIcon"></i></button>
+                <div class="h-8 w-px bg-[var(--border-line)] hidden sm:block"></div>
+                <div class="relative cursor-pointer group" onclick="openLogin()">
+                    <img id="headerAvatar" src="https://ui-avatars.com/api/?name=User&background=8b5cf6&color=fff" class="w-9 h-9 rounded-full border-2 border-transparent group-hover:border-[var(--primary)] transition-all shadow-lg">
+                    <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[var(--surface-solid)]"></div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth" id="contentArea">
+            <div id="view-home" class="view-section active"></div>
+            <div id="view-students" class="view-section"></div>
+            <div id="view-memories" class="view-section"></div>
+            <div id="view-events" class="view-section"></div>
+            <div id="view-quotes" class="view-section"></div>
+            <div id="view-admin" class="view-section"></div>
+        </main>
+    </div>
+
+    <div id="loginModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onclick="closeLogin()">
+        <div class="glass-strong p-8 md:p-10 rounded-3xl w-[90%] max-w-md relative border border-white/10 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="text-center mb-8">
+                <img src="novus.jpg" alt="Novus logo" class="login-logo mx-auto mb-4">
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to 11G Yearbook</h2>
+                <p class="text-[var(--text-muted)] text-sm">Sign in to explore the yearbook</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div class="relative"><i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i><input type="email" id="loginEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]"></div>
+                <div class="relative"><i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i><input type="password" id="loginPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]"></div>
+                <div class="flex gap-2"><button type="button" onclick="switchToSignup()" class="flex-1 py-3 rounded-xl bg-black/20 border border-white/10 text-[var(--text-main)] font-medium hover:bg-white/10">Sign Up</button><button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Sign In</button></div>
+            </form>
+            <div id="signupForm" style="display: none;" class="mt-6 pt-6 border-t border-white/10">
+                <div class="space-y-4"><input type="text" id="signupName" placeholder="Full Name" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4"><input type="email" id="signupEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4"><input type="password" id="signupPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4"><button onclick="handleSignup()" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Create Account</button><p class="text-center text-sm text-[var(--text-muted)]">Already have an account? <a href="#" onclick="switchToLogin()" class="text-[var(--primary)] hover:underline">Sign In</a></p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ======================== DATA MODELS ========================
+        // yearbookStudents: only admin can add/edit/delete
+        let yearbookStudents = [];
+        // users: { email, password, name, isAdmin }
+        let users = [];
+        let memories = [];
+        let currentUser = null;
+
+        function loadData() {
+            const storedStudents = localStorage.getItem('11g_yearbook_students');
+            const storedUsers = localStorage.getItem('11g_users');
+            const storedMemories = localStorage.getItem('11g_memories');
+
+            if (storedStudents) yearbookStudents = JSON.parse(storedStudents);
+            else {
+                yearbookStudents = [
+                    { id: '1', name: 'Emma Watson', email: 'emma@example.com', quote: 'Dream big, work hard.', dream: 'Become a marine biologist', hobby: 'Photography & hiking', aspiration: 'Protect the oceans', funFact: 'I can play three instruments', profileImage: null },
+                    { id: '2', name: 'Liam Johnson', email: 'liam@example.com', quote: 'Stay curious.', dream: 'Start a tech company', hobby: 'Coding & chess', aspiration: 'Innovate for good', funFact: 'I built my first app at 14', profileImage: null },
+                ];
+                localStorage.setItem('11g_yearbook_students', JSON.stringify(yearbookStudents));
+            }
+
+            if (storedUsers) users = JSON.parse(storedUsers);
+            else {
+                users = [
+                    { email: 'admin@novus.com', password: 'admin123', name: 'Administrator', isAdmin: true }
+                ];
+                localStorage.setItem('11g_users', JSON.stringify(users));
+            }
+
+            if (storedMemories) memories = JSON.parse(storedMemories);
+            else {
+                memories = [];
+                localStorage.setItem('11g_memories', JSON.stringify(memories));
+            }
+        }
+
+        function saveStudents() { localStorage.setItem('11g_yearbook_students', JSON.stringify(yearbookStudents)); }
+        function saveUsers() { localStorage.setItem('11g_users', JSON.stringify(users)); }
+        function saveMemories() { localStorage.setItem('11g_memories', JSON.stringify(memories)); }
+        function generateId() { return Date.now().toString() + Math.random().toString(36).substr(2, 5); }
+
+        function fileToDataURL(file) {
+            return new Promise((resolve) => {
+                if (!file) resolve(null);
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ======================== AUTH ========================
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            if (!email || !password) return alert('Please fill all fields');
+            const user = users.find(u => u.email === email && u.password === password);
+            if (!user) return alert('Invalid credentials. Try admin@novus.com / admin123 or sign up.');
+            currentUser = user;
+            localStorage.setItem('currentUser', JSON.stringify({ email: user.email, name: user.name, isAdmin: user.isAdmin }));
+            document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=8b5cf6&color=fff`;
+            if (user.isAdmin) document.getElementById('adminNavBtn').classList.remove('hidden');
+            else document.getElementById('adminNavBtn').classList.add('hidden');
+            closeLogin();
+            renderAllViews();
+            showView('home');
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            if (!name || !email || !password) return alert('Please fill all fields');
+            if (users.some(u => u.email === email)) return alert('Email already exists');
+            const newUser = { email, password, name, isAdmin: false };
+            users.push(newUser);
+            saveUsers();
+            alert('Account created! Please sign in.');
+            switchToLogin();
+        }
+
+        function switchToSignup() {
+            document.getElementById('signupForm').style.display = 'block';
+            document.querySelector('#loginModal form').style.display = 'none';
+        }
+        function switchToLogin() {
+            document.getElementById('signupForm').style.display = 'none';
+            document.querySelector('#loginModal form').style.display = 'block';
+        }
+        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+        function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
+
+        // ======================== ADMIN FUNCTIONS ========================
+        async function addStudentFromForm() {
+            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can add students');
+            const name = document.getElementById('newName').value.trim();
+            const email = document.getElementById('newEmail').value.trim();
+            const quote = document.getElementById('newQuote').value;
+            const dream = document.getElementById('newDream').value;
+            const hobby = document.getElementById('newHobby').value;
+            const aspiration = document.getElementById('newAspiration').value;
+            const funFact = document.getElementById('newFunFact').value;
+            const photoFile = document.getElementById('newPhoto').files[0];
+            if (!name || !email) return alert('Name and email required');
+            let profileImage = null;
+            if (photoFile) profileImage = await fileToDataURL(photoFile);
+            const newStudent = { id: generateId(), name, email, quote, dream, hobby, aspiration, funFact, profileImage };
+            yearbookStudents.push(newStudent);
+            saveStudents();
+            renderAllViews();
+            document.getElementById('newName').value = '';
+            document.getElementById('newEmail').value = '';
+            document.getElementById('newQuote').value = '';
+            document.getElementById('newDream').value = '';
+            document.getElementById('newHobby').value = '';
+            document.getElementById('newAspiration').value = '';
+            document.getElementById('newFunFact').value = '';
+            document.getElementById('newPhoto').value = '';
+            document.getElementById('file-name').innerText = 'No file chosen';
+            alert('Student added to yearbook');
+        }
+
+        async function editStudent(id) {
+            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can edit');
+            const student = yearbookStudents.find(s => s.id === id);
+            if (!student) return;
+            const newName = prompt('New name', student.name);
+            if (newName) {
+                student.name = newName;
+                const newQuote = prompt('Quote', student.quote || '');
+                if (newQuote !== null) student.quote = newQuote;
+                const newDream = prompt('Dream', student.dream || '');
+                if (newDream !== null) student.dream = newDream;
+                const newHobby = prompt('Hobby', student.hobby || '');
+                if (newHobby !== null) student.hobby = newHobby;
+                const newAspiration = prompt('Aspiration', student.aspiration || '');
+                if (newAspiration !== null) student.aspiration = newAspiration;
+                const newFunFact = prompt('Fun Fact', student.funFact || '');
+                if (newFunFact !== null) student.funFact = newFunFact;
+                saveStudents();
+                renderAllViews();
+            }
+        }
+
+        async function deleteStudent(id) {
+            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete');
+            if (!confirm('Delete this student?')) return;
+            yearbookStudents = yearbookStudents.filter(s => s.id !== id);
+            saveStudents();
+            renderAllViews();
+        }
+
+        async function createPostFromForm() {
+            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can create memories');
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value;
+            const imageFile = document.getElementById('postImage').files[0];
+            if (!title) return alert('Title required');
+            let imageUrl = null;
+            if (imageFile) imageUrl = await fileToDataURL(imageFile);
+            const newPost = { id: generateId(), content: `${title}\n${content}`, image: imageUrl, createdAt: new Date().toISOString() };
+            memories.unshift(newPost);
+            saveMemories();
+            renderAllViews();
+            document.getElementById('postTitle').value = '';
+            document.getElementById('postContent').value = '';
+            document.getElementById('postImage').value = '';
+            document.getElementById('post-file-name').innerText = 'No file chosen';
+            alert('Memory added');
+        }
+
+        // ======================== RENDER VIEWS ========================
+        function renderHome() {
+            const studentCount = yearbookStudents.length;
+            const postCount = memories.length;
+            const gradDate = new Date('2027-06-15');
+            const daysLeft = Math.ceil((gradDate - new Date()) / (1000 * 60 * 60 * 24));
+            document.getElementById('view-home').innerHTML = `
+                <section class="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 overflow-hidden">
+                    <div class="absolute inset-0 z-0 pointer-events-none"><div class="absolute top-1/4 left-1/4 w-72 md:w-96 h-72 md:h-96 bg-[var(--primary)]/20 rounded-full blur-3xl animate-pulse-glow"></div><div class="absolute bottom-1/4 right-1/4 w-72 md:w-96 h-72 md:h-96 bg-[var(--secondary)]/20 rounded-full blur-3xl animate-pulse-glow" style="animation-delay: 2s;"></div></div>
+                    <div class="relative z-10 text-center max-w-4xl mx-auto px-4">
+                        <div class="hero-logo-wrap">
+                            <img src="novus.jpg" alt="Novus logo" class="hero-logo">
+                        </div>
+                        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-[var(--primary)]/20 text-[var(--primary)] text-sm font-bold uppercase tracking-wider mb-6 md:mb-8 animate-fade-in-up"><span class="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse"></span> 11G • Class of 2026/27</div>
+                        <h1 class="kinetic-title mb-4 md:mb-6 text-[var(--text-main)]"><span class="block">Novus</span><span class="block gradient-text">Academy</span></h1>
+                        <p class="text-[var(--text-muted)] text-base md:text-lg lg:text-xl font-medium max-w-2xl mx-auto mb-8 md:mb-12 leading-relaxed px-4 animate-fade-in-up">Celebrating the journey, dreams, and memories of our incredible 11G class.</p>
+                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 animate-fade-in-up"><button onclick="showView('students')" class="glow-btn w-full sm:w-auto px-6 md:px-8 py-3.5 md:py-4 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold hover:shadow-lg"><i class="fas fa-users mr-2"></i> Meet the Class</button><button onclick="showView('memories')" class="w-full sm:w-auto px-6 md:px-8 py-3.5 md:py-4 rounded-2xl glass text-[var(--text-main)] font-bold hover:bg-[var(--surface-hover)] border border-[var(--border-line)]"><i class="fas fa-play mr-2"></i> View Memories</button></div>
+                    </div>
+                    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce"><i class="fas fa-chevron-down text-[var(--text-muted)] text-xl"></i></div>
+                </section>
+                <section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20"><div class="text-center mb-10 md:mb-12"><h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-[var(--text-main)]">Highlights</h2><p class="text-[var(--text-muted)]">Discover what makes our 11G class unique</p></div><div class="bento-grid" id="statsBento"></div></section>
+                <section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20"><div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8 md:mb-12"><div><h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 text-[var(--text-main)]">Recent Memories</h2><p class="text-[var(--text-muted)]">Latest moments captured</p></div><button onclick="showView('memories')" class="text-[var(--primary)] font-medium hover:underline">View All <i class="fas fa-arrow-right ml-2"></i></button></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="recentMemoriesHome"></div></section>
+                <section class="max-w-4xl mx-auto px-4 sm:px-6 py-16 md:py-20"><div class="glass-strong rounded-3xl p-6 md:p-12 relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--primary)] via-[var(--secondary)] to-[var(--accent)]"></div><div class="text-center"><i class="fas fa-envelope-open-text text-3xl md:text-4xl text-[var(--primary)] mb-4"></i><h2 class="text-xl md:text-2xl lg:text-3xl font-bold mb-3 md:mb-4 text-[var(--text-main)]">Stay Connected</h2><p class="text-[var(--text-muted)] mb-6">Join our 11G alumni network</p><div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"><input type="email" placeholder="Enter your email" class="flex-1 px-4 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border-line)]"><button class="px-6 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Subscribe</button></div></div></div></section>
+            `;
+            document.getElementById('statsBento').innerHTML = `
+                <div class="bento-item bento-large"><div><div class="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center mb-3"><i class="fas fa-graduation-cap text-xl text-[var(--primary)]"></i></div><h3 class="text-xl font-bold">Class Statistics</h3><p class="text-sm text-[var(--text-muted)]">Our journey by the numbers</p></div><div class="grid grid-cols-2 gap-3 mt-4"><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${studentCount}</div><div class="text-xs">Students</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${postCount}</div><div class="text-xs">Memories</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">8</div><div class="text-xs">Clubs</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">12+</div><div class="text-xs">Events</div></div></div></div>
+                <div class="bento-item bento-tall cursor-pointer relative overflow-hidden" onclick="showView('memories')"><div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1523580494112-071d45815615?w=800');"></div><div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div><div class="relative h-full flex flex-col justify-end p-4"><span class="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold w-fit mb-2">Featured</span><h3 class="text-lg font-bold text-white">Recent Memory</h3><p class="text-white/80 text-sm">${memories[0]?.content.split('\n')[0] || 'Share your story'}</p></div></div>
+                <div class="bento-item text-center"><i class="fas fa-quote-left text-3xl text-[var(--primary)]/20 mb-3"></i><p class="text-lg font-medium italic">"The future belongs to those who believe in the beauty of their dreams."</p><p class="text-sm text-[var(--text-muted)]">— Eleanor Roosevelt</p></div>
+                <div class="bento-item bento-wide"><h3 class="font-bold mb-3">Quick Access</h3><div class="flex flex-wrap gap-2"><button onclick="showView('students')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-user mr-1"></i>Directory</button><button onclick="showView('events')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-calendar mr-1"></i>Events</button><button onclick="showView('memories')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-camera mr-1"></i>Gallery</button><button onclick="showView('quotes')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-comment mr-1"></i>Stories</button></div></div>
+                <div class="bento-item flex justify-between"><div><p class="text-sm text-[var(--text-muted)]">End of Year</p><p class="text-xl font-bold">June 2027</p><p class="text-xs text-[var(--primary)] mt-1">${daysLeft} days to go</p></div><div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white"><i class="fas fa-sun"></i></div></div>
+                <div class="bento-item text-center"><h3 class="font-bold mb-2">Share Your Story</h3><p class="text-sm text-[var(--text-muted)] mb-3">Tag us in your 11G moments</p><div class="flex justify-center gap-2"><a href="#" class="w-9 h-9 rounded-full bg-[var(--surface-hover)] flex items-center justify-center"><i class="fab fa-instagram"></i></a><a href="#" class="w-9 h-9 rounded-full bg-[var(--surface-hover)] flex items-center justify-center"><i class="fab fa-twitter"></i></a><a href="#" class="w-9 h-9 rounded-full bg-[var(--surface-hover)] flex items-center justify-center"><i class="fab fa-facebook-f"></i></a></div></div>
+            `;
+            const recent = memories.slice(0, 3);
+            document.getElementById('recentMemoriesHome').innerHTML = recent.length ? recent.map(p => `
+                <div class="group cursor-pointer" onclick="alert('${p.content.split('\n')[0]}')"><div class="overflow-hidden rounded-2xl relative"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="w-full h-48 object-cover transition-transform group-hover:scale-105"><div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4"><p class="text-white font-bold">${p.content.split('\n')[0]}</p></div></div></div>
+            `).join('') : `<div class="col-span-full text-center py-10 text-[var(--text-muted)]">No memories yet. Admin can add special moments.</div>`;
+        }
+
+        function renderStudents() {
+            const grid = document.getElementById('view-students');
+            if (yearbookStudents.length === 0) {
+                grid.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-10 text-center text-[var(--text-muted)]">No students added yet. Admin can add them.</div>`;
+                return;
+            }
+            grid.innerHTML = `
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">11G Classmates</span></h1><p class="text-[var(--text-muted)] mt-2">Meet the incredible Class of 2026/27</p></div><div class="relative w-full md:w-80"><i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i><input type="text" id="studentSearch" placeholder="Search by name..." oninput="filterStudents(this.value)" class="w-full bg-[var(--surface)] border border-[var(--border-line)] rounded-full py-3 pl-12 pr-4 text-sm focus:border-[var(--primary)] focus:outline-none"></div></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" id="studentGrid"></div>
+                </div>
+            `;
+            renderStudentGrid();
+        }
+
+        function renderStudentGrid(filter = '') {
+            const container = document.getElementById('studentGrid');
+            if (!container) return;
+            const filtered = yearbookStudents.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
+            container.innerHTML = filtered.map(s => `
+                <div class="bg-[var(--surface-solid)] rounded-3xl p-5 flex flex-col items-center border border-[var(--border-line)] interactive-card cursor-pointer" onclick="openStudentModal('${s.id}')">
+                    <img src="${s.profileImage || `https://ui-avatars.com/api/?name=${s.name}&background=8b5cf6&color=fff`}" class="w-20 h-20 rounded-full object-cover border-4 border-[var(--bg)] shadow-lg group-hover:scale-110 transition-transform">
+                    <h3 class="font-bold text-lg text-[var(--text-main)] mt-3 text-center">${s.name}</h3>
+                    <p class="text-[var(--text-muted)] text-sm mt-2 text-center italic">"${s.quote || 'No quote yet'}"</p>
+                </div>
+            `).join('');
+        }
+        window.filterStudents = (q) => renderStudentGrid(q);
+
+        function openStudentModal(id) {
+            const s = yearbookStudents.find(s => s.id === id);
+            if (!s) return;
+            const modalHtml = `
+                <div id="studentModal" class="profile-modal active" onclick="closeStudentModal()">
+                    <div class="profile-card" onclick="event.stopPropagation()">
+                        <div class="relative p-6 md:p-8">
+                            <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+                            <div class="flex flex-col items-center text-center">
+                                <img src="${s.profileImage || `https://ui-avatars.com/api/?name=${s.name}&background=8b5cf6&color=fff&size=128`}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4">
+                                <h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${s.name}</h2>
+                                <p class="text-[var(--text-muted)] mt-1">${s.email}</p>
+                                <div class="mt-5 w-full space-y-4">
+                                    <div class="glass rounded-2xl p-4"><i class="fas fa-quote-left text-[var(--primary)]/40 mr-2"></i><p class="text-[var(--text-main)] italic">"${s.quote || 'No quote yet'}"</p></div>
+                                    <div class="grid grid-cols-1 gap-3"><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-star text-yellow-400 w-6"></i><span class="font-semibold">Dream:</span><span>${s.dream || '—'}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-heart text-pink-400 w-6"></i><span class="font-semibold">Hobby:</span><span>${s.hobby || '—'}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-rocket text-purple-400 w-6"></i><span class="font-semibold">Aspiration:</span><span>${s.aspiration || '—'}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-smile-wink text-green-400 w-6"></i><span class="font-semibold">Fun Fact:</span><span>${s.funFact || '—'}</span></div></div>
+                                </div>
+                                <div class="mt-6 flex gap-3"><span class="px-4 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-sm font-semibold">11G</span><span class="px-4 py-1 rounded-full bg-[var(--secondary)]/10 text-[var(--secondary)] text-sm font-semibold">Class of 2026/27</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const existing = document.getElementById('studentModal');
+            if (existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        window.closeStudentModal = () => { const modal = document.getElementById('studentModal'); if(modal) modal.remove(); };
+
+        function renderMemories() {
+            const container = document.getElementById('view-memories');
+            if (memories.length === 0) {
+                container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]"><i class="fas fa-camera text-4xl mb-3 opacity-50"></i><p>No memories yet. Admin can add special moments.</p></div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
+                    <div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1><p class="text-[var(--text-muted)] mt-2">Captured moments from our 11G journey</p></div>
+                    <div class="masonry" id="memoryGrid"></div>
+                </div>
+            `;
+            const grid = document.getElementById('memoryGrid');
+            grid.innerHTML = memories.map(p => `
+                <div class="masonry-item group cursor-pointer" onclick="alert('${p.content}')"><div class="rounded-2xl overflow-hidden relative"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}" class="w-full object-cover"><div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4"><p class="text-white font-bold">${p.content.split('\n')[0]}</p></div></div></div>
+            `).join('');
+        }
+
+        function renderEvents() {
+            const container = document.getElementById('view-events');
+            if (memories.length === 0) {
+                container.innerHTML = `<div class="max-w-4xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">No events yet. Create memories to see timeline.</div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto px-4 sm:px-6 py-10 pb-20">
+                    <div class="mb-12"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Special</span> <span class="gradient-text">Events</span></h1><p class="text-[var(--text-muted)] mt-2">Timeline of our 11G milestones</p></div>
+                    <div class="relative timeline-container" id="eventGrid"></div>
+                </div>
+            `;
+            const grid = document.getElementById('eventGrid');
+            grid.innerHTML = memories.map(p => `
+                <div class="relative mb-8 group"><div class="timeline-dot"></div><div class="glass rounded-2xl border border-[var(--border-line)] overflow-hidden w-full md:w-[85%] ml-auto hover:-translate-y-2 transition"><div class="p-5"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase mb-3">${new Date(p.createdAt).toLocaleDateString()}</div><h3 class="font-bold text-xl mb-2">${p.content.split('\n')[0]}</h3><p class="text-[var(--text-muted)]">${p.content.split('\n').slice(1).join(' ')}</p></div></div></div>
+            `).join('');
+        }
+
+        function renderStories() {
+            const container = document.getElementById('view-quotes');
+            container.innerHTML = `
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
+                    <div class="text-center mb-12"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Student</span> <span class="gradient-text">Stories</span></h1><p class="text-[var(--text-muted)] max-w-2xl mx-auto">Dreams, quotes, and inspirations from the Class of 2026/27</p></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="storiesGrid"></div>
+                </div>
+            `;
+            const grid = document.getElementById('storiesGrid');
+            grid.innerHTML = yearbookStudents.map(s => `
+                <div class="glass rounded-2xl p-6 cursor-pointer interactive-card" onclick="openStudentModal('${s.id}')"><i class="fas fa-quote-left text-3xl text-[var(--primary)]/30 mb-3"></i><p class="text-lg font-medium mb-4">"${s.quote || 'No quote yet'}"</p><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white text-sm font-bold">${s.name.split(' ').map(n=>n[0]).join('')}</div><div><p class="font-bold">${s.name}</p><p class="text-xs text-[var(--text-muted)]">✨ ${s.aspiration || 'Dream big'}</p></div></div></div>
+            `).join('');
+        }
+
+        function renderAdminPanel() {
+            if (!currentUser || !currentUser.isAdmin) {
+                document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Access denied. Admin only.</div>`;
+                return;
+            }
+            const studentListHtml = yearbookStudents.map(s => `<div class="flex justify-between items-center p-3 border-b border-[var(--border-line)]"><span>${s.name} (${s.email})</span><div><button onclick="editStudent('${s.id}')" class="text-blue-400 mr-2"><i class="fas fa-edit"></i></button><button onclick="deleteStudent('${s.id}')" class="text-red-400"><i class="fas fa-trash"></i></button></div></div>`).join('');
+            document.getElementById('view-admin').innerHTML = `
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
+                    <div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Admin</span> <span class="gradient-text">Panel</span></h1><p class="text-[var(--text-muted)] mt-2">Manage students and memories</p></div>
+                    <div class="glass rounded-2xl p-6 mb-8"><h3 class="text-xl font-bold mb-4">Add New Student</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" id="newName" placeholder="Full Name" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="email" id="newEmail" placeholder="Email" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><textarea id="newQuote" placeholder="Quote / Motto" rows="2" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"></textarea><input type="text" id="newDream" placeholder="Dream / Aspiration" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newHobby" placeholder="Hobby / Passion" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newAspiration" placeholder="Aspiration (Life Goal)" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newFunFact" placeholder="Fun Fact" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><div class="col-span-2"><label class="block text-sm text-[var(--text-muted)] mb-1">Profile Photo</label><input type="file" id="newPhoto" accept="image/*" class="hidden"><div class="flex items-center gap-2"><button onclick="document.getElementById('newPhoto').click()" class="file-upload-btn"><i class="fas fa-upload mr-1"></i> Choose Photo</button><span id="file-name" class="file-name">No file chosen</span></div></div></div><button onclick="addStudentFromForm()" class="mt-4 px-6 py-2 bg-[var(--primary)] text-white rounded-xl">Add Student</button></div>
+                    <div class="glass rounded-2xl p-6 mb-8"><h3 class="text-xl font-bold mb-4">Create Memory Post</h3><div class="grid grid-cols-1 gap-4"><input type="text" id="postTitle" placeholder="Title" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><textarea id="postContent" placeholder="Description" rows="3" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"></textarea><div><input type="file" id="postImage" accept="image/*" class="hidden"><button onclick="document.getElementById('postImage').click()" class="file-upload-btn"><i class="fas fa-image mr-1"></i> Add Image</button><span id="post-file-name" class="file-name ml-2">No file chosen</span></div><button onclick="createPostFromForm()" class="mt-2 px-6 py-2 bg-[var(--primary)] text-white rounded-xl">Create Memory</button></div></div>
+                    <div class="glass rounded-2xl p-6"><h3 class="text-xl font-bold mb-4">Manage Students</h3><div id="adminStudentList" class="space-y-2 max-h-96 overflow-y-auto">${studentListHtml}</div></div>
+                </div>
+            `;
+            document.getElementById('newPhoto').addEventListener('change', function(e) {
+                document.getElementById('file-name').innerText = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+            });
+            document.getElementById('postImage').addEventListener('change', function(e) {
+                document.getElementById('post-file-name').innerText = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+            });
+        }
+
+        function renderAllViews() {
+            renderHome();
+            renderStudents();
+            renderMemories();
+            renderEvents();
+            renderStories();
+            renderAdminPanel();
+        }
+
+        // ======================== UI HELPERS ========================
+        let isSidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        function toggleSidebar() {
+            isSidebarCollapsed = !isSidebarCollapsed;
+            localStorage.setItem('sidebar-collapsed', isSidebarCollapsed);
+            const sidebar = document.getElementById('sidebar');
+            const main = document.getElementById('mainContent');
+            const icon = document.getElementById('toggleIcon');
+            const texts = document.querySelectorAll('.sidebar-text');
+            const widget = document.querySelector('.countdown-widget');
+            const iconWidget = document.querySelector('.countdown-icon');
+            if (isSidebarCollapsed) {
+                sidebar.classList.remove('sidebar-expanded'); sidebar.classList.add('sidebar-collapsed');
+                main.classList.add('collapsed'); icon.className = 'fas fa-chevron-right text-xs';
+                texts.forEach(el => el.style.display = 'none');
+                widget.style.display = 'none'; iconWidget.classList.remove('hidden'); iconWidget.classList.add('flex');
+            } else {
+                sidebar.classList.remove('sidebar-collapsed'); sidebar.classList.add('sidebar-expanded');
+                main.classList.remove('collapsed'); icon.className = 'fas fa-chevron-left text-xs';
+                texts.forEach(el => el.style.display = 'block');
+                widget.style.display = 'block'; iconWidget.classList.add('hidden'); iconWidget.classList.remove('flex');
+            }
+        }
+        function openMobileSidebar() { document.getElementById('mobileOverlay').classList.add('active'); document.getElementById('sidebar').style.transform = 'translateX(0)'; }
+        function closeMobileSidebar() { document.getElementById('mobileOverlay').classList.remove('active'); document.getElementById('sidebar').style.transform = ''; }
+        function showView(viewName) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            const activeLink = document.querySelector(`.nav-link[data-view="${viewName}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+                const existing = activeLink.querySelector('.active-indicator');
+                if(existing) existing.remove();
+                activeLink.insertAdjacentHTML('afterbegin', '<div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--primary)] rounded-r-full"></div>');
+            }
+            closeMobileSidebar();
+        }
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) { html.classList.remove('dark'); icon.className = 'fas fa-moon text-lg'; localStorage.setItem('theme', 'light'); }
+            else { html.classList.add('dark'); icon.className = 'fas fa-sun text-lg'; localStorage.setItem('theme', 'dark'); }
+        }
+
+        // ======================== INIT ========================
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (localStorage.getItem('theme') === 'light') { document.documentElement.classList.remove('dark'); document.getElementById('themeIcon').className = 'fas fa-moon text-lg'; }
+            if (isSidebarCollapsed) toggleSidebar();
+            loadData();
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=8b5cf6&color=fff`;
+                if (currentUser.isAdmin) document.getElementById('adminNavBtn').classList.remove('hidden');
+                closeLogin();
+                renderAllViews();
+                showView('home');
+            } else {
+                openLogin();
+            }
+        });
+    </script>
+</body>
+</html>
