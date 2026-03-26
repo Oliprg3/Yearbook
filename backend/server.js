@@ -4,12 +4,13 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const multer = require('multer');
+const bcrypt = require('bcryptjs');
 
 dotenv.config();
 
 const app = express();
 
-// CORS configuration
+// CORS configuration – add your frontend domain
 app.use(cors({
     origin: ['https://novus-yearbook.onrender.com', 'http://localhost:3000'],
     credentials: true
@@ -45,34 +46,36 @@ const upload = multer({
 
 app.locals.upload = upload;
 
-// ------------------- TEST ENDPOINT -------------------
-app.get('/api/test-db', async (req, res) => {
-    try {
-        const User = require('./models/User');
-        const count = await User.countDocuments();
-        res.json({ success: true, userCount: count });
-    } catch (err) {
-        console.error('Test DB error:', err);
-        res.status(500).json({ error: err.message, stack: err.stack });
-    }
-});
-// -----------------------------------------------------
-
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/posts', require('./routes/posts'));
 
-// MongoDB connection with detailed logging
-console.log('🔄 Attempting to connect to MongoDB...');
-console.log('MONGO_URI exists:', !!process.env.MONGO_URI);
-
+// MongoDB connection with admin creation
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected successfully'))
+  .then(async () => {
+      console.log('✅ MongoDB connected successfully');
+
+      // Auto-create admin user if not exists
+      const User = require('./models/User');
+      const adminExists = await User.findOne({ email: 'admin@newayacademy.com' });
+      if (!adminExists) {
+          const hashedPassword = await bcrypt.hash('admin123', 10);
+          await User.create({
+              name: 'Administrator',
+              email: 'admin@newayacademy.com',
+              password: hashedPassword,
+              isAdmin: true,
+              year: 2027
+          });
+          console.log('✅ Admin user created (email: admin@newayacademy.com, password: admin123)');
+      } else {
+          console.log('👑 Admin user already exists');
+      }
+  })
   .catch(err => {
-    console.error('❌ MongoDB connection error:');
-    console.error('  Message:', err.message);
-    console.error('  Full error:', err);
+      console.error('❌ MongoDB connection error:', err);
+      // Do not exit – let the server run even if DB fails (it will return errors)
   });
 
 const PORT = process.env.PORT || 5000;
