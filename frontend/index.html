@@ -430,7 +430,7 @@
 
         let token = localStorage.getItem('token');
         let currentUser = null;
-        let allStudents = [];   // only regular users (non-admin)
+        let allStudents = [];
         let allMemories = [];
 
         // Helper: escape HTML
@@ -465,8 +465,8 @@
                 // Get current user
                 const userData = await authFetch('/auth/me');
                 currentUser = userData;
-                // Check if admin
-                const isAdmin = currentUser.email === 'admin@newayacademy.com'; // adjust if needed
+                // Check if admin (use the email from the user data)
+                const isAdmin = currentUser.email === 'admin@newayacademy.com';
                 document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
                 // Load all users (students)
                 const allUsers = await authFetch('/profile/all');
