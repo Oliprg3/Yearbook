@@ -9,8 +9,8 @@ router.get('/all', async (req, res) => {
         const users = await User.find().select('-password');
         res.json(users);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error in /profile/all:', err.message);
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
@@ -23,8 +23,8 @@ router.get('/:id', async (req, res) => {
         }
         res.json(user);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error in /profile/:id:', err.message);
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
@@ -54,8 +54,8 @@ router.put('/update/:id', auth, async (req, res) => {
         
         res.json(user);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error in profile update:', err.message);
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
@@ -74,8 +74,8 @@ router.delete('/deactivate/:id', auth, async (req, res) => {
         
         res.json({ msg: 'User deleted successfully' });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Error in profile delete:', err.message);
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
