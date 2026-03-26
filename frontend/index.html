@@ -1,3 +1,6 @@
+Here is the final HTML code with all sample data removed. Now when a new user signs up, they will see an empty yearbook – no pre‑populated students or memories. Only the admin (admin@novus.com / admin123) can add students and memories, which will be saved locally. The rest of the functionality remains intact.
+
+```html
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -446,10 +449,8 @@
             if (storedStudents) {
                 try { yearbookStudents = JSON.parse(storedStudents); } catch { yearbookStudents = []; }
             } else {
-                yearbookStudents = [
-                    { id: '1', name: 'Emma Watson', email: 'emma@example.com', quote: 'Dream big, work hard.', dream: 'Become a marine biologist', hobby: 'Photography & hiking', aspiration: 'Protect the oceans', funFact: 'I can play three instruments', profileImage: null },
-                    { id: '2', name: 'Liam Johnson', email: 'liam@example.com', quote: 'Stay curious.', dream: 'Start a tech company', hobby: 'Coding & chess', aspiration: 'Innovate for good', funFact: 'I built my first app at 14', profileImage: null },
-                ];
+                // Start with empty array — no default students
+                yearbookStudents = [];
                 localStorage.setItem('11g_yearbook_students', JSON.stringify(yearbookStudents));
             }
 
@@ -463,16 +464,8 @@
             if (storedMemories) {
                 try { memories = JSON.parse(storedMemories); } catch { memories = []; }
             } else {
-                // Add a sample memory to demonstrate functionality
-                memories = [
-                    {
-                        id: 'sample1',
-                        title: 'Welcome to Novus 11G Yearbook!',
-                        content: 'This is your digital yearbook. Admin can add memories, photos, and more. Enjoy!',
-                        image: null,
-                        createdAt: new Date().toISOString()
-                    }
-                ];
+                // Start with empty array — no default memories
+                memories = [];
                 localStorage.setItem('11g_memories', JSON.stringify(memories));
             }
         }
@@ -1135,3 +1128,4 @@
     </script>
 </body>
 </html>
+```
