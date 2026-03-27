@@ -5,14 +5,22 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 
-// Register a new user
-router.post('/register', async (req, res) => {
+// @route   POST /api/auth/register
+// @desc    Create a new user (admin only)
+// @access  Admin
+router.post('/register', auth, async (req, res) => {
     try {
-        const { name, email, password, quote, dream, hobby, aspiration, funFact, year, isAdmin } = req.body;
+        // Check if requester is admin
+        const requester = await User.findById(req.user.id);
+        if (!requester.isAdmin) {
+            return res.status(403).json({ error: 'Only admin can create students' });
+        }
+
+        const { name, email, password, quote, dream, hobby, aspiration, funFact, year } = req.body;
         
         let user = await User.findOne({ email });
         if (user) {
-            return res.status(400).json({ msg: 'User already exists' });
+            return res.status(400).json({ error: 'User already exists' });
         }
         
         user = new User({
@@ -25,7 +33,7 @@ router.post('/register', async (req, res) => {
             aspiration: aspiration || '',
             funFact: funFact || '',
             year: year || 2027,
-            isAdmin: isAdmin || false
+            isAdmin: false
         });
         
         const salt = await bcrypt.genSalt(10);
@@ -33,41 +41,27 @@ router.post('/register', async (req, res) => {
         
         await user.save();
         
-        const payload = {
-            user: {
-                id: user.id,
-                email: user.email,
-                isAdmin: user.isAdmin
-            }
-        };
-        
-        jwt.sign(
-            payload,
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' },
-            (err, token) => {
-                if (err) throw err;
-                res.json({ token, user: { id: user.id, name, email, isAdmin: user.isAdmin } });
-            }
-        );
+        res.json({ message: 'Student created successfully', user: { id: user.id, name, email } });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error(err);
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
-// Login
+// @route   POST /api/auth/login
+// @desc    Authenticate user & get token
+// @access  Public
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ msg: 'Invalid credentials' });
+            return res.status(400).json({ error: 'Invalid credentials' });
         }
         
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid credentials' });
+            return res.status(400).json({ error: 'Invalid credentials' });
         }
         
         const payload = {
@@ -88,19 +82,21 @@ router.post('/login', async (req, res) => {
             }
         );
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error(err);
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
-// Get current user
+// @route   GET /api/auth/me
+// @desc    Get current user
+// @access  Private
 router.get('/me', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
         res.json(user);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error(err);
+        res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
