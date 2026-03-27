@@ -4,7 +4,7 @@ const auth = require('../middleware/auth');
 const Post = require('../models/Post');
 const User = require('../models/User');
 
-// Helper function to upload buffer to Cloudinary
+// Helper function to upload buffer to Cloudinar
 const uploadToCloudinary = (buffer, options) => {
     return new Promise((resolve, reject) => {
         const cloudinary = require('cloudinary').v2;
