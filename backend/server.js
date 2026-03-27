@@ -6,21 +6,13 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
-const cloudinary = require('cloudinary').v2; // 
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Cloudinary configuration
-cloudinary.config({
-    cloud_name: 'dqh0ymcqm',
-    api_key: '255666469977761',
-    api_secret: 'l3BEphpnQF5oT1w_JcQz7TY6XiI'
-});
-
-// Make sure uploads folder exists (for existing local files, e.g., memory images)
+// Make sure uploads folder exists (for local file storage if you choose option 2)
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -35,8 +27,20 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
-// Multer for file uploads – now using memory storage
-const storage = multer.memoryStorage(); // ← changed to memory storage
+// Multer configuration – choose one storage method below
+// Option A: Disk storage (keeps files in the 'uploads' folder)
+// Option B: Memory storage (for Base64 conversion)
+// We'll set memory storage here; later we'll decide in auth.js.
+
+const storage = multer.memoryStorage(); // For Base64 (Option 1)
+// If you prefer disk storage, change to:
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => { cb(null, uploadsDir); },
+//     filename: (req, file, cb) => {
+//         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+//         cb(null, uniqueSuffix + path.extname(file.originalname).toLowerCase());
+//     }
+// });
 
 const upload = multer({
     storage,
@@ -45,7 +49,6 @@ const upload = multer({
         const allowedTypes = /jpeg|jpg|png|gif/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-
         if (mimetype && extname) {
             cb(null, true);
         } else {
