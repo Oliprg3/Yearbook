@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 // ========== PUBLIC SIGNUP (regular viewers) ==========
+// They get isStudent: false by default
 router.post('/signup', async (req, res) => {
     try {
         const { name, email, password, year } = req.body;
@@ -24,6 +25,7 @@ router.post('/signup', async (req, res) => {
             password: hashedPassword,
             year: year || 2027,
             isAdmin: false,
+            // isStudent defaults to false – they are not added to the student list
         });
         await user.save();
 
@@ -72,8 +74,10 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
-// ========== ADMIN-ONLY: CREATE STUDENT (with photo, email optional) ==========
+// ========== ADMIN-ONLY: CREATE STUDENT (with photo) ==========
+// This route uses the multer upload instance from server.js
 router.post('/register', auth, (req, res, next) => {
+    // Use the upload instance attached to the app (configured in server.js)
     req.app.locals.upload.single('profileImage')(req, res, async (err) => {
         if (err) return res.status(400).json({ error: err.message });
 
@@ -83,46 +87,18 @@ router.post('/register', auth, (req, res, next) => {
                 return res.status(403).json({ error: 'Only admin can create students' });
             }
 
-            let { name, email, password, quote, dream, hobby, aspiration, funFact, year } = req.body;
-            if (!name || !password) {
-                return res.status(400).json({ error: 'Name and password are required' });
+            const { name, email, password, quote, dream, hobby, aspiration, funFact, year } = req.body;
+            if (!name || !email || !password) {
+                return res.status(400).json({ error: 'Name, email, and password required' });
             }
 
-            // Generate email if empty
-            let finalEmail = email && email.trim() !== '' ? email.trim() : null;
-            if (!finalEmail) {
-                const baseEmail = name.replace(/\s+/g, '-').toLowerCase();
-                const timestamp = Date.now();
-                const random = Math.random().toString(36).substring(2, 8);
-                finalEmail = `${baseEmail}-${timestamp}-${random}@novus.com`;
-            }
-
-            // Check existing user
-            let existing = await User.findOne({ email: finalEmail });
-            if (existing) {
-                if (!email || email.trim() === '') {
-                    const newRandom = Math.random().toString(36).substring(2, 10);
-                    finalEmail = `${baseEmail}-${Date.now()}-${newRandom}@novus.com`;
-                    existing = await User.findOne({ email: finalEmail });
-                    if (existing) {
-                        return res.status(400).json({ error: 'Could not generate unique email. Please try again.' });
-                    }
-                } else {
-                    return res.status(400).json({ error: 'User already exists' });
-                }
-            }
-
-            // Convert image to Base64 data URL (if present)
-            let profileImage = null;
-            if (req.file) {
-                const base64 = req.file.buffer.toString('base64');
-                profileImage = `data:${req.file.mimetype};base64,${base64}`;
-            }
+            let existing = await User.findOne({ email });
+            if (existing) return res.status(400).json({ error: 'User already exists' });
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const newStudent = new User({
                 name,
-                email: finalEmail,
+                email,
                 password: hashedPassword,
                 quote: quote || '',
                 dream: dream || '',
@@ -131,15 +107,15 @@ router.post('/register', auth, (req, res, next) => {
                 funFact: funFact || '',
                 year: year || 2027,
                 isAdmin: false,
-                isStudent: true,
-                profileImage
+                isStudent: true,          // <-- mark as a student (appears in student list)
+                profileImage: req.file ? `/uploads/${req.file.filename}` : null
             });
 
             await newStudent.save();
 
             res.json({
                 message: 'Student created successfully',
-                user: { id: newStudent.id, name, email: finalEmail }
+                user: { id: newStudent.id, name, email }
             });
         } catch (err) {
             console.error('Admin create student error:', err);
