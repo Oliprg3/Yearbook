@@ -4,6 +4,18 @@ const auth = require('../middleware/auth');
 const Post = require('../models/Post');
 const User = require('../models/User');
 
+// Helper function to upload buffer to Cloudinary
+const uploadToCloudinary = (buffer, options) => {
+    return new Promise((resolve, reject) => {
+        const cloudinary = require('cloudinary').v2;
+        const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+        });
+        uploadStream.end(buffer);
+    });
+};
+
 // @route   POST /api/posts/create
 // @desc    Create a new memory post (admin only)
 // @access  Admin
@@ -25,23 +37,28 @@ router.post('/create', auth, (req, res, next) => {
                 return res.status(400).json({ error: 'Content is required' });
             }
 
-            let image = null;
+            let imageUrl = null;
             if (req.file) {
-                image = `/uploads/${req.file.filename}`;
+                // Upload to Cloudinary instead of saving locally
+                const result = await uploadToCloudinary(req.file.buffer, {
+                    folder: 'novus-yearbook/memories'
+                });
+                imageUrl = result.secure_url;
+                console.log('✅ Memory image uploaded to Cloudinary:', imageUrl);
             } else if (req.body.image) {
-                image = req.body.image;
+                imageUrl = req.body.image;
             }
 
             const post = new Post({
                 content,
-                image,
+                image: imageUrl,
                 author: req.user.id
             });
 
             await post.save();
             res.json(post);
         } catch (err) {
-            console.error(err);
+            console.error('Create post error:', err);
             res.status(500).json({ error: 'Server error', details: err.message });
         }
     });
@@ -91,10 +108,30 @@ router.delete('/:id', auth, async (req, res) => {
             return res.status(404).json({ error: 'Post not found' });
         }
 
+        // Optional: Delete image from Cloudinary if it exists
+        // This would free up storage space
+        if (post.image && post.image.includes('cloudinary.com')) {
+            try {
+                // Extract public ID from Cloudinary URL
+                // URL format: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/filename.jpg
+                const urlParts = post.image.split('/');
+                const filename = urlParts[urlParts.length - 1].split('.')[0];
+                const folder = 'novus-yearbook/memories';
+                const publicId = `${folder}/${filename}`;
+                
+                const cloudinary = require('cloudinary').v2;
+                await cloudinary.uploader.destroy(publicId);
+                console.log('✅ Deleted image from Cloudinary:', publicId);
+            } catch (cloudinaryErr) {
+                console.error('Failed to delete from Cloudinary:', cloudinaryErr);
+                // Don't fail the request if Cloudinary deletion fails
+            }
+        }
+
         await post.deleteOne();
-        res.json({ message: 'Post deleted' });
+        res.json({ message: 'Post deleted successfully' });
     } catch (err) {
-        console.error(err);
+        console.error('Delete post error:', err);
         res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
