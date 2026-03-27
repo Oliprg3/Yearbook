@@ -1,136 +1,73 @@
 const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
 const path = require('path');
-const User = require('../models/User');
-const auth = require('../middleware/auth');
+const multer = require('multer');
+const bcrypt = require('bcryptjs');
+const fs = require('fs');
 
-// Configure multer for profile image uploads
+dotenv.config();
+
+const app = express();
+
+// CORS
+app.use(cors({
+    origin: ['https://novus-yearbook.onrender.com', 'http://localhost:3000'],
+    credentials: true
+}));
+app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Create uploads folder if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+// Multer config
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '../uploads'));
-    },
+    destination: (req, file, cb) => cb(null, uploadsDir),
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
     }
 });
-
 const upload = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (mimetype && extname) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed'));
-        }
+        const allowed = /jpeg|jpg|png|gif/;
+        const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+        const mime = allowed.test(file.mimetype);
+        if (ext && mime) cb(null, true);
+        else cb(new Error('Only image files allowed'));
     }
 });
+app.locals.upload = upload;
 
-// @route   POST /api/auth/register
-// @desc    Create a new student (admin only)
-// @access  Admin
-router.post('/register', auth, upload.single('profileImage'), async (req, res) => {
-    try {
-        // Check if requester is admin
-        const requester = await User.findById(req.user.id);
-        if (!requester.isAdmin) {
-            return res.status(403).json({ error: 'Only admin can create students' });
-        }
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/profile', require('./routes/profile'));
+app.use('/api/posts', require('./routes/posts'));
 
-        // Fields from multipart form
-        const { name, email, password, quote, dream, hobby, aspiration, funFact, year } = req.body;
-        
-        // Check if user already exists
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ error: 'User already exists' });
-        }
-        
-        // Create new user
-        user = new User({
-            name,
-            email,
-            password,
-            quote: quote || '',
-            dream: dream || '',
-            hobby: hobby || '',
-            aspiration: aspiration || '',
-            funFact: funFact || '',
-            year: year || 2027,
-            isAdmin: false,
-            profileImage: req.file ? `/uploads/${req.file.filename}` : null
-        });
-        
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
-        
-        await user.save();
-        
-        res.json({ message: 'Student created successfully', user: { id: user.id, name, email } });
-    } catch (err) {
-        console.error('Register error:', err);
-        res.status(500).json({ error: 'Server error', details: err.message });
-    }
-});
+// MongoDB connection + admin creation
+mongoose.connect(process.env.MONGO_URI)
+  .then(async () => {
+      console.log('✅ MongoDB connected');
+      const User = require('./models/User');
+      const adminExists = await User.findOne({ email: 'admin@newayacademy.com' });
+      if (!adminExists) {
+          const hashed = await bcrypt.hash('admin123', 10);
+          await User.create({
+              name: 'Administrator',
+              email: 'admin@newayacademy.com',
+              password: hashed,
+              isAdmin: true,
+              year: 2027
+          });
+          console.log('✅ Admin created');
+      }
+  })
+  .catch(err => console.error('❌ MongoDB error:', err.message));
 
-// @route   POST /api/auth/login
-// @desc    Authenticate user & get token
-// @access  Public
-router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ error: 'Invalid credentials' });
-        }
-        
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ error: 'Invalid credentials' });
-        }
-        
-        const payload = {
-            user: {
-                id: user.id,
-                email: user.email,
-                isAdmin: user.isAdmin
-            }
-        };
-        
-        jwt.sign(
-            payload,
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' },
-            (err, token) => {
-                if (err) throw err;
-                res.json({ token, user: { id: user.id, name: user.name, email, isAdmin: user.isAdmin } });
-            }
-        );
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error', details: err.message });
-    }
-});
-
-// @route   GET /api/auth/me
-// @desc    Get current user
-// @access  Private
-router.get('/me', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        res.json(user);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error', details: err.message });
-    }
-});
-
-module.exports = router;
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
