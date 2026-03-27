@@ -140,7 +140,7 @@ router.post('/register', auth, (req, res, next) => {
                 year: year || 2027,
                 isAdmin: false,
                 isStudent: true,                    // <-- ADDED
-                profileImage                        // <-- Cloudinary URL
+                profileImage: req.file ? `/uploads/${req.file.filename}` : null                    // <-- Cloudinary URL
             });
 
             await newStudent.save();
