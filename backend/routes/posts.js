@@ -7,34 +7,44 @@ const User = require('../models/User');
 // @route   POST /api/posts/create
 // @desc    Create a new memory post (admin only)
 // @access  Admin
-router.post('/create', auth, async (req, res) => {
-    try {
-        const requester = await User.findById(req.user.id);
-        if (!requester.isAdmin) {
-            return res.status(403).json({ error: 'Only admin can create memories' });
+router.post('/create', auth, (req, res, next) => {
+    // Use the multer instance from server.js to handle file upload
+    req.app.locals.upload.single('image')(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ error: err.message });
         }
 
-        const { content } = req.body;
-        // Multer attaches file to req.file, but for simplicity we'll read from req.body.image (base64) if file not present.
-        let image = null;
-        if (req.file) {
-            image = `/uploads/${req.file.filename}`;
-        } else if (req.body.image) {
-            image = req.body.image;
+        try {
+            const requester = await User.findById(req.user.id);
+            if (!requester.isAdmin) {
+                return res.status(403).json({ error: 'Only admin can create memories' });
+            }
+
+            const { content } = req.body;
+            if (!content) {
+                return res.status(400).json({ error: 'Content is required' });
+            }
+
+            let image = null;
+            if (req.file) {
+                image = `/uploads/${req.file.filename}`;
+            } else if (req.body.image) {
+                image = req.body.image;
+            }
+
+            const post = new Post({
+                content,
+                image,
+                author: req.user.id
+            });
+
+            await post.save();
+            res.json(post);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Server error', details: err.message });
         }
-        
-        const post = new Post({
-            content,
-            image,
-            author: req.user.id
-        });
-        
-        await post.save();
-        res.json(post);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error', details: err.message });
-    }
+    });
 });
 
 // @route   GET /api/posts
@@ -57,7 +67,7 @@ router.get('/:id', async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
-            return res.status(404).json({ msg: 'Post not found' });
+            return res.status(404).json({ error: 'Post not found' });
         }
         res.json(post);
     } catch (err) {
@@ -75,14 +85,14 @@ router.delete('/:id', auth, async (req, res) => {
         if (!requester.isAdmin) {
             return res.status(403).json({ error: 'Only admin can delete memories' });
         }
-        
+
         const post = await Post.findById(req.params.id);
         if (!post) {
-            return res.status(404).json({ msg: 'Post not found' });
+            return res.status(404).json({ error: 'Post not found' });
         }
-        
+
         await post.deleteOne();
-        res.json({ msg: 'Post deleted' });
+        res.json({ message: 'Post deleted' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error', details: err.message });
