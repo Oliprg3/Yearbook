@@ -11,7 +11,8 @@ const UserSchema = new mongoose.Schema({
     funFact: { type: String, default: '' },
     profileImage: { type: String, default: null },
     year: { type: Number, default: 2027 },
-    isAdmin: { type: Boolean, default: false }
+    isAdmin: { type: Boolean, default: false },
+    isStudent: { type: Boolean, default: false }   // ← NEW FIELD
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
