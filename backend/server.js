@@ -6,13 +6,21 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
+const cloudinary = require('cloudinary').v2; // ← added
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Make sure uploads folder exists
+// Cloudinary configuration
+cloudinary.config({
+    cloud_name: 'dqh0ymcqm',
+    api_key: '255666469977761',
+    api_secret: 'l3BEphpnQF5oT1w_JcQz7TY6XiI'
+});
+
+// Make sure uploads folder exists (for existing local files, e.g., memory images)
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -27,16 +35,8 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
-// Multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + path.extname(file.originalname).toLowerCase());
-    }
-});
+// Multer for file uploads – now using memory storage
+const storage = multer.memoryStorage(); // ← changed to memory storage
 
 const upload = multer({
     storage,
