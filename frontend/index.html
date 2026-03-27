@@ -326,6 +326,40 @@
             transition: background 0.2s;
         }
         .danger-btn:hover { background: #dc2626; }
+        /* Image Zoom Modal */
+        .image-zoom-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+        }
+        .image-zoom-modal.active {
+            display: flex;
+        }
+        .image-zoom-modal img {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            animation: zoomIn 0.3s ease;
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        /* Make memory images clickable */
+        .memory-img-container {
+            cursor: pointer;
+        }
+        .student-profile-img {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -434,6 +468,11 @@
         </div>
     </div>
 
+    <!-- Image Zoom Modal -->
+    <div id="imageZoomModal" class="image-zoom-modal" onclick="closeImageZoom()">
+        <img id="zoomImage" src="" alt="Zoomed image">
+    </div>
+
     <script>
         // ========== BACKEND CONFIGURATION ==========
         const API_BASE = 'https://yearbook2.onrender.com/api';
@@ -466,6 +505,19 @@
                 throw new Error(err);
             }
             return res.json();
+        }
+
+        // Image zoom functions
+        function openImageZoom(imageUrl) {
+            const modal = document.getElementById('imageZoomModal');
+            const zoomImg = document.getElementById('zoomImage');
+            zoomImg.src = imageUrl;
+            modal.classList.add('active');
+        }
+
+        function closeImageZoom() {
+            const modal = document.getElementById('imageZoomModal');
+            modal.classList.remove('active');
         }
 
         // ========== DATA LOADING ==========
@@ -785,7 +837,6 @@
         }
 
         // ========== RENDER FUNCTIONS ==========
-        // (All render functions are the same as before – they use allStudents and allMemories)
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
@@ -870,26 +921,28 @@
             const container = document.getElementById('studentGrid');
             if (!container) return;
             const filtered = allStudents.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
-            container.innerHTML = filtered.map(s => `
-                <div class="student-card bg-[var(--surface-solid)] rounded-3xl p-5 flex flex-col items-center border border-[var(--border-line)] interactive-card cursor-pointer" onclick="openStudentModal('${s.id}')">
-                    <img src="${s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff`}" class="w-20 h-20 rounded-full object-cover border-4 border-[var(--bg)] shadow-lg">
-                    <h3 class="font-bold text-lg text-[var(--text-main)] mt-3 text-center">${escapeHtml(s.name)}</h3>
-                    <p class="text-[var(--text-muted)] text-sm mt-2 text-center italic">"${escapeHtml(s.quote || 'No quote yet')}"</p>
-                </div>
-            `).join('');
+            container.innerHTML = filtered.map(s => {
+                const imgUrl = s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff`;
+                return `<div class="student-card bg-[var(--surface-solid)] rounded-3xl p-5 flex flex-col items-center border border-[var(--border-line)] interactive-card cursor-pointer" onclick="openStudentModal('${s.id}')">
+                            <img src="${imgUrl}" class="w-20 h-20 rounded-full object-cover border-4 border-[var(--bg)] shadow-lg student-profile-img" onclick="event.stopPropagation(); openImageZoom('${imgUrl}')">
+                            <h3 class="font-bold text-lg text-[var(--text-main)] mt-3 text-center">${escapeHtml(s.name)}</h3>
+                            <p class="text-[var(--text-muted)] text-sm mt-2 text-center italic">"${escapeHtml(s.quote || 'No quote yet')}"</p>
+                        </div>`;
+            }).join('');
         }
         window.filterStudents = (q) => renderStudentGrid(q);
 
         function openStudentModal(id) {
             const s = allStudents.find(st => st.id === id);
             if (!s) return;
+            const imgUrl = s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`;
             const modalHtml = `
                 <div id="studentModal" class="profile-modal active" onclick="closeStudentModal()">
                     <div class="profile-card" onclick="event.stopPropagation()">
                         <div class="relative p-6 md:p-8">
                             <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
                             <div class="flex flex-col items-center text-center">
-                                <img src="${s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4">
+                                <img src="${imgUrl}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')">
                                 <h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(s.name)}</h2>
                                 <p class="text-[var(--text-muted)] mt-1">${escapeHtml(s.email)}</p>
                                 <div class="mt-5 w-full space-y-4">
@@ -925,7 +978,19 @@
                 const title = escapeHtml(p.content?.split('\n')[0] || 'Memory');
                 const desc = escapeHtml(p.content?.split('\n').slice(1).join(' ') || '');
                 const image = p.image ? (p.image.startsWith('http') ? p.image : `${API_BASE.replace('/api', '')}${p.image}`) : 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800';
-                return `<div class="masonry-item memory-card group cursor-pointer"><div class="rounded-2xl overflow-hidden relative glass"><img src="${image}" class="w-full object-cover" alt="${title}"><div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-100 flex flex-col justify-end p-4"><p class="text-white font-bold text-lg">${title}</p>${desc ? `<p class="text-white/85 text-sm mt-1">${desc}</p>` : ''}<div class="mt-3 flex items-center justify-between gap-2"><span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>${currentUser && currentUser.isAdmin ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div></div>`;
+                return `<div class="masonry-item memory-card group cursor-pointer">
+                            <div class="memory-img-container rounded-2xl overflow-hidden relative glass" onclick="openImageZoom('${image}')">
+                                <img src="${image}" class="w-full object-cover" alt="${title}">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-100 flex flex-col justify-end p-4">
+                                    <p class="text-white font-bold text-lg">${title}</p>
+                                    ${desc ? `<p class="text-white/85 text-sm mt-1">${desc}</p>` : ''}
+                                    <div class="mt-3 flex items-center justify-between gap-2">
+                                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>
+                                        ${currentUser && currentUser.isAdmin ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
             }).join('');
         }
 
@@ -1022,6 +1087,8 @@
         window.closeStudentModal = closeStudentModal;
         window.addStudentFromForm = addStudentFromForm;
         window.createPostFromForm = createPostFromForm;
+        window.openImageZoom = openImageZoom;
+        window.closeImageZoom = closeImageZoom;
     </script>
 </body>
 </html>
