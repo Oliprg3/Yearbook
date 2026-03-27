@@ -116,19 +116,20 @@ router.post('/register', auth, (req, res, next) => {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-            const newStudent = new User({
-                name,
-                email: finalEmail,
-                password: hashedPassword,
-                quote: quote || '',
-                dream: dream || '',
-                hobby: hobby || '',
-                aspiration: aspiration || '',
-                funFact: funFact || '',
-                year: year || 2027,
-                isAdmin: false,
-                profileImage: req.file ? `/uploads/${req.file.filename}` : null
-            });
+        const newStudent = new User({
+        name,
+        email: finalEmail,
+        password: hashedPassword,
+        quote: quote || '',
+        dream: dream || '',
+        hobby: hobby || '',
+        aspiration: aspiration || '',
+        funFact: funFact || '',
+        year: year || 2027,
+        isAdmin: false,
+        isStudent: true,                           // <-- ADD THIS LINE
+        profileImage: req.file ? `/uploads/${req.file.filename}` : null
+});;
 
             await newStudent.save();
 
