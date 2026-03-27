@@ -10,7 +10,7 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration – add your frontend domain
+// CORS – allow your frontend domain
 app.use(cors({
     origin: ['https://novus-yearbook.onrender.com', 'http://localhost:3000'],
     credentials: true
@@ -18,7 +18,7 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Multer configuration
+// Multer for file uploads (images)
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, 'uploads'));
@@ -56,7 +56,6 @@ mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
       console.log('✅ MongoDB connected successfully');
 
-      // Auto-create admin user if not exists
       const User = require('./models/User');
       const adminExists = await User.findOne({ email: 'admin@newayacademy.com' });
       if (!adminExists) {
@@ -74,8 +73,8 @@ mongoose.connect(process.env.MONGO_URI)
       }
   })
   .catch(err => {
-      console.error('❌ MongoDB connection error:', err);
-      // Do not exit – let the server run even if DB fails (it will return errors)
+      console.error('❌ MongoDB connection error:', err.message);
+      // Server continues, but API calls will fail with DB errors
   });
 
 const PORT = process.env.PORT || 5000;
