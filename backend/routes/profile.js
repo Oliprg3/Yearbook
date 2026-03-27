@@ -3,18 +3,22 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
 
-// Get all users (students)
+// @route   GET /api/profile/all
+// @desc    Get all users (students)
+// @access  Public (any logged in user can see)
 router.get('/all', async (req, res) => {
     try {
         const users = await User.find().select('-password');
         res.json(users);
     } catch (err) {
-        console.error('Error in /profile/all:', err.message);
+        console.error(err);
         res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
-// Get user by ID
+// @route   GET /api/profile/:id
+// @desc    Get user by ID
+// @access  Public
 router.get('/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select('-password');
@@ -23,14 +27,22 @@ router.get('/:id', async (req, res) => {
         }
         res.json(user);
     } catch (err) {
-        console.error('Error in /profile/:id:', err.message);
+        console.error(err);
         res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
-// Update user profile (admin only)
+// @route   PUT /api/profile/update/:id
+// @desc    Update user profile (admin only)
+// @access  Admin
 router.put('/update/:id', auth, async (req, res) => {
     try {
+        // Check if requester is admin
+        const requester = await User.findById(req.user.id);
+        if (!requester.isAdmin) {
+            return res.status(403).json({ error: 'Only admin can update students' });
+        }
+
         const { name, quote, dream, hobby, aspiration, funFact, profileImage } = req.body;
         
         const updateFields = {};
@@ -54,17 +66,19 @@ router.put('/update/:id', auth, async (req, res) => {
         
         res.json(user);
     } catch (err) {
-        console.error('Error in profile update:', err.message);
+        console.error(err);
         res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
 
-// Delete user (admin only)
+// @route   DELETE /api/profile/deactivate/:id
+// @desc    Delete user (admin only)
+// @access  Admin
 router.delete('/deactivate/:id', auth, async (req, res) => {
     try {
-        const requestingUser = await User.findById(req.user.id);
-        if (!requestingUser.isAdmin) {
-            return res.status(403).json({ msg: 'Not authorized' });
+        const requester = await User.findById(req.user.id);
+        if (!requester.isAdmin) {
+            return res.status(403).json({ error: 'Only admin can delete students' });
         }
         
         const user = await User.findByIdAndDelete(req.params.id);
@@ -74,7 +88,7 @@ router.delete('/deactivate/:id', auth, async (req, res) => {
         
         res.json({ msg: 'User deleted successfully' });
     } catch (err) {
-        console.error('Error in profile delete:', err.message);
+        console.error(err);
         res.status(500).json({ error: 'Server error', details: err.message });
     }
 });
