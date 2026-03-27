@@ -3,11 +3,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2; // <-- ADD THIS
 
 const router = express.Router();
 
 // ========== PUBLIC SIGNUP (regular viewers) ==========
-// They get isAdmin: false by default
 router.post('/signup', async (req, res) => {
     try {
         const { name, email, password, year } = req.body;
@@ -75,7 +75,7 @@ router.get('/me', auth, async (req, res) => {
 
 // ========== ADMIN-ONLY: CREATE STUDENT (with photo, email optional) ==========
 router.post('/register', auth, (req, res, next) => {
-    // Use the upload instance attached to the app (configured in server.js)
+    // Use the upload instance attached to the app (memory storage)
     req.app.locals.upload.single('profileImage')(req, res, async (err) => {
         if (err) return res.status(400).json({ error: err.message });
 
@@ -90,7 +90,7 @@ router.post('/register', auth, (req, res, next) => {
                 return res.status(400).json({ error: 'Name and password are required' });
             }
 
-            // If email is empty or missing, generate a unique one
+            // Generate email if empty
             let finalEmail = email && email.trim() !== '' ? email.trim() : null;
             if (!finalEmail) {
                 const baseEmail = name.replace(/\s+/g, '-').toLowerCase();
@@ -99,10 +99,9 @@ router.post('/register', auth, (req, res, next) => {
                 finalEmail = `${baseEmail}-${timestamp}-${random}@novus.com`;
             }
 
-            // Check if the (generated) email already exists
+            // Check existing user
             let existing = await User.findOne({ email: finalEmail });
             if (existing) {
-                // If email was generated, try one more time with a different random
                 if (!email || email.trim() === '') {
                     const newRandom = Math.random().toString(36).substring(2, 10);
                     finalEmail = `${baseEmail}-${Date.now()}-${newRandom}@novus.com`;
@@ -115,21 +114,34 @@ router.post('/register', auth, (req, res, next) => {
                 }
             }
 
+            // Upload image to Cloudinary if present
+            let profileImage = null;
+            if (req.file) {
+                try {
+                    // req.file.buffer is available because we use memory storage
+                    const result = await cloudinary.uploader.upload(`data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`);
+                    profileImage = result.secure_url;
+                } catch (uploadErr) {
+                    console.error('Cloudinary upload error:', uploadErr);
+                    return res.status(500).json({ error: 'Image upload failed' });
+                }
+            }
+
             const hashedPassword = await bcrypt.hash(password, 10);
-        const newStudent = new User({
-        name,
-        email: finalEmail,
-        password: hashedPassword,
-        quote: quote || '',
-        dream: dream || '',
-        hobby: hobby || '',
-        aspiration: aspiration || '',
-        funFact: funFact || '',
-        year: year || 2027,
-        isAdmin: false,
-        isStudent: true,                           // <-- ADD THIS LINE
-        profileImage: req.file ? `/uploads/${req.file.filename}` : null
-});;
+            const newStudent = new User({
+                name,
+                email: finalEmail,
+                password: hashedPassword,
+                quote: quote || '',
+                dream: dream || '',
+                hobby: hobby || '',
+                aspiration: aspiration || '',
+                funFact: funFact || '',
+                year: year || 2027,
+                isAdmin: false,
+                isStudent: true,                    // <-- ADDED
+                profileImage                        // <-- Cloudinary URL
+            });
 
             await newStudent.save();
 
