@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
-const cloudinary = require('cloudinary').v2; // ← added
+const cloudinary = require('cloudinary').v2; // 
 
 dotenv.config();
 
