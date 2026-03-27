@@ -16,7 +16,7 @@ const uploadToCloudinary = (buffer, options) => {
     });
 };
 
-// @route   POST /api/posts/create
+// @route   POST /api/posts/creat
 // @desc    Create a new memory post (admin only)
 // @access  Admin
 router.post('/create', auth, (req, res, next) => {
