@@ -450,17 +450,28 @@
         async function loadAllData() {
             if (!token) return;
             try {
+                // Get current user
                 const userData = await authFetch('/auth/me');
                 currentUser = userData;
                 const isAdmin = currentUser.isAdmin === true;
                 document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
+                
+                // Load all users (students)
                 const allUsers = await authFetch('/profile/all');
-                allStudents = allUsers.filter(u => !u.isAdmin);
-                allMemories = await authFetch('/posts');
+                // Map _id to id for easier frontend usage
+                allStudents = allUsers
+                    .filter(u => !u.isAdmin)
+                    .map(u => ({ ...u, id: u._id }));
+                
+                // Load memories
+                const allPosts = await authFetch('/posts');
+                // Map _id to id for memories
+                allMemories = allPosts.map(p => ({ ...p, id: p._id }));
+                
                 renderAllViews();
             } catch (err) {
                 console.error('Failed to load data:', err);
-                alert('Failed to load data. Please check your connection.');
+                alert('Failed to load data. Please check your connection.\n' + err.message);
             }
         }
 
@@ -477,7 +488,7 @@
                     body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.msg || 'Login failed');
+                if (!res.ok) throw new Error(data.error || 'Login failed');
 
                 token = data.token;
                 localStorage.setItem('token', token);
@@ -485,7 +496,7 @@
                 closeLogin();
                 showView('home');
             } catch (err) {
-                alert(err.message);
+                alert('Login failed: ' + err.message);
             }
         }
 
@@ -592,7 +603,8 @@
                     headers: { 'x-auth-token': token },
                     body: formData
                 });
-                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to add student');
                 alert('Student added');
                 await loadAllData();
                 // Clear form
@@ -672,7 +684,8 @@
                     headers: { 'x-auth-token': token },
                     body: formData
                 });
-                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to create memory');
                 alert('Memory added!');
                 await loadAllData();
                 document.getElementById('postTitle').value = '';
@@ -698,6 +711,10 @@
         }
 
         // ========== RENDER FUNCTIONS ==========
+        // (These functions are the same as before – they use `allStudents` and `allMemories`.)
+        // For brevity, I'll keep them as they were in the previous working version.
+        // They are already correct and will use the mapped IDs.
+
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
