@@ -2,17 +2,14 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const auth = require('../middleware/auth'); // make sure this file exists
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   POST /api/auth/signup
-// @desc    Register a new user (regular user)
-// @access  Public
+// Signup – returns token
 router.post('/signup', async (req, res) => {
     try {
         const { name, email, password, year } = req.body;
-
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
         }
@@ -21,7 +18,6 @@ router.post('/signup', async (req, res) => {
         if (user) return res.status(400).json({ error: 'User already exists' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
         user = new User({
             name,
             email,
@@ -41,13 +37,10 @@ router.post('/signup', async (req, res) => {
     }
 });
 
-// @route   POST /api/auth/login
-// @desc    Authenticate user & get token
-// @access  Public
+// Login – returns token
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password are required' });
         }
@@ -68,9 +61,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// @route   GET /api/auth/me
-// @desc    Get current logged-in user
-// @access  Private
+// Get current user – protected
 router.get('/me', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
