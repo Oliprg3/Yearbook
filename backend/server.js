@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Make sure uploads folder exists (for local file storage if you choose option 2)
+// Make sure uploads folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -27,20 +27,16 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
-// Multer configuration – choose one storage method below
-// Option A: Disk storage (keeps files in the 'uploads' folder)
-// Option B: Memory storage (for Base64 conversion)
-// We'll set memory storage here; later we'll decide in auth.js.
-
-const storage = multer.memoryStorage(); // For Base64 (Option 1)
-// If you prefer disk storage, change to:
-// const storage = multer.diskStorage({
-//     destination: (req, file, cb) => { cb(null, uploadsDir); },
-//     filename: (req, file, cb) => {
-//         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-//         cb(null, uniqueSuffix + path.extname(file.originalname).toLowerCase());
-//     }
-// });
+// Multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + path.extname(file.originalname).toLowerCase());
+    }
+});
 
 const upload = multer({
     storage,
@@ -49,6 +45,7 @@ const upload = multer({
         const allowedTypes = /jpeg|jpg|png|gif/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
+
         if (mimetype && extname) {
             cb(null, true);
         } else {
