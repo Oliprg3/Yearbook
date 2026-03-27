@@ -477,7 +477,7 @@
                 const isAdmin = currentUser.isAdmin === true;
                 document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
                 const allUsers = await authFetch('/profile/all');
-                allStudents = allUsers.filter(u => !u.isAdmin).map(u => ({ ...u, id: u._id }));
+                allStudents = allUsers.filter(u => u.isStudent === true).map(u => ({ ...u, id: u._id }));
                 allMemories = await authFetch('/posts');
                 allMemories = allMemories.map(p => ({ ...p, id: p._id }));
                 renderAllViews();
