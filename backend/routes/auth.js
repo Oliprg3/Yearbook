@@ -116,16 +116,11 @@ router.post('/register', auth, (req, res, next) => {
 
             // Upload image to Cloudinary if present
             let profileImage = null;
-            if (req.file) {
-                try {
-                    // req.file.buffer is available because we use memory storage
-                    const result = await cloudinary.uploader.upload(`data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`);
-                    profileImage = result.secure_url;
-                } catch (uploadErr) {
-                    console.error('Cloudinary upload error:', uploadErr);
-                    return res.status(500).json({ error: 'Image upload failed' });
-                }
-            }
+                 if (req.file) {
+    // Convert image buffer to Base64 string
+                   const base64 = req.file.buffer.toString('base64');
+                   profileImage = `data:${req.file.mimetype};base64,${base64}`;
+}
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const newStudent = new User({
