@@ -1,73 +1,81 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
-const multer = require('multer');
 const bcrypt = require('bcryptjs');
-const fs = require('fs');
+const User = require('../models/User');
 
-dotenv.config();
+const router = express.Router();
 
-const app = express();
+// Signup
+router.post('/signup', async (req, res) => {
+    try {
+        const { name, email, password, year } = req.body;
 
-// CORS
-app.use(cors({
-    origin: ['https://novus-yearbook.onrender.com', 'http://localhost:3000'],
-    credentials: true
-}));
-app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: 'Name, email, and password are required' });
+        }
 
-// Create uploads folder if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
 
-// Multer config
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword,
+            year: year || null
+        });
+
+        return res.status(201).json({
+            message: 'Signup successful',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                year: user.year,
+                isAdmin: user.isAdmin || false
+            }
+        });
+    } catch (err) {
+        console.error('Signup error:', err);
+        return res.status(500).json({ message: 'Server error' });
     }
 });
-const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const allowed = /jpeg|jpg|png|gif/;
-        const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-        const mime = allowed.test(file.mimetype);
-        if (ext && mime) cb(null, true);
-        else cb(new Error('Only image files allowed'));
+
+// Login
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        return res.status(200).json({
+            message: 'Login successful',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                year: user.year,
+                isAdmin: user.isAdmin || false
+            }
+        });
+    } catch (err) {
+        console.error('Login error:', err);
+        return res.status(500).json({ message: 'Server error' });
     }
 });
-app.locals.upload = upload;
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/profile', require('./routes/profile'));
-app.use('/api/posts', require('./routes/posts'));
-
-// MongoDB connection + admin creation
-mongoose.connect(process.env.MONGO_URI)
-  .then(async () => {
-      console.log('✅ MongoDB connected');
-      const User = require('./models/User');
-      const adminExists = await User.findOne({ email: 'admin@newayacademy.com' });
-      if (!adminExists) {
-          const hashed = await bcrypt.hash('admin123', 10);
-          await User.create({
-              name: 'Administrator',
-              email: 'admin@newayacademy.com',
-              password: hashed,
-              isAdmin: true,
-              year: 2027
-          });
-          console.log('✅ Admin created');
-      }
-  })
-  .catch(err => console.error('❌ MongoDB error:', err.message));
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+module.exports = router;
