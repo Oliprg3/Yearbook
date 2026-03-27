@@ -22,7 +22,7 @@ cloudinary.config({
 
 console.log('✅ Cloudinary configured');
 
-// Create uploads folder for temporary storage (optional, for backward compatibility)
+// Create uploads folder for temporary storage (optional, for backward compatibility
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
