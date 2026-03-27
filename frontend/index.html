@@ -6,6 +6,7 @@
     <title>Novus | 11G Yearbook • Class of 2026/27</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="novus.jpg">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -21,7 +22,6 @@
         }
     </script>
     <style>
-        /* All styles remain exactly as before – unchanged */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -346,7 +346,6 @@
             <button class="nav-link active" data-view="home" onclick="showView('home')"><div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--primary)] rounded-r-full"></div><i class="fas fa-home text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Home</span></button>
             <button class="nav-link" data-view="students" onclick="showView('students')"><i class="fas fa-user-friends text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Students</span></button>
             <button class="nav-link" data-view="memories" onclick="showView('memories')"><i class="fas fa-images text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Memories</span></button>
-            <button class="nav-link" data-view="events" onclick="showView('events')"><i class="far fa-calendar-alt text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Special Events</span></button>
             <button class="nav-link" data-view="quotes" onclick="showView('quotes')"><i class="fas fa-quote-right text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Student Stories</span></button>
             <button id="adminNavBtn" class="nav-link hidden" data-view="admin" onclick="showView('admin')"><i class="fas fa-crown text-lg w-6 text-center"></i><span class="font-medium sidebar-text">Admin Panel</span></button>
         </nav>
@@ -398,7 +397,13 @@
                 <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to Novus</h2>
                 <p class="text-[var(--text-muted)] text-sm">Sign in to explore the yearbook</p>
             </div>
-            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+            <!-- Tabs -->
+            <div class="flex gap-2 mb-6 border-b border-white/10">
+                <button id="loginTabBtn" class="flex-1 py-2 text-white font-semibold border-b-2 border-primary">Sign In</button>
+                <button id="signupTabBtn" class="flex-1 py-2 text-[var(--text-muted)] font-semibold">Sign Up</button>
+            </div>
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
                 <div class="relative">
                     <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
                     <input type="email" id="loginEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
@@ -408,6 +413,23 @@
                     <input type="password" id="loginPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
                 </div>
                 <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Sign In</button>
+            </form>
+            <!-- Signup Form -->
+            <form id="signupForm" style="display: none;" onsubmit="event.preventDefault(); handleSignup();" class="space-y-4">
+                <div class="relative">
+                    <i class="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="text" id="signupName" placeholder="Full Name" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="email" id="signupEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="password" id="signupPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Create Account</button>
+                <p class="text-center text-sm text-[var(--text-muted)]">Already have an account? <a href="#" id="switchToLogin" class="text-[var(--primary)] hover:underline">Sign In</a></p>
             </form>
         </div>
     </div>
@@ -450,24 +472,14 @@
         async function loadAllData() {
             if (!token) return;
             try {
-                // Get current user
                 const userData = await authFetch('/auth/me');
                 currentUser = userData;
                 const isAdmin = currentUser.isAdmin === true;
                 document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
-                
-                // Load all users (students)
                 const allUsers = await authFetch('/profile/all');
-                // Map _id to id for easier frontend usage
-                allStudents = allUsers
-                    .filter(u => !u.isAdmin)
-                    .map(u => ({ ...u, id: u._id }));
-                
-                // Load memories
-                const allPosts = await authFetch('/posts');
-                // Map _id to id for memories
-                allMemories = allPosts.map(p => ({ ...p, id: p._id }));
-                
+                allStudents = allUsers.filter(u => u.isStudent === true).map(u => ({ ...u, id: u._id }));
+                allMemories = await authFetch('/posts');
+                allMemories = allMemories.map(p => ({ ...p, id: p._id }));
                 renderAllViews();
             } catch (err) {
                 console.error('Failed to load data:', err);
@@ -500,7 +512,65 @@
             }
         }
 
-        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+        async function handleSignup() {
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            if (!name || !email || !password) return alert('Please fill all fields');
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Signup failed');
+
+                token = data.token;
+                localStorage.setItem('token', token);
+                await loadAllData();
+                closeLogin();
+                showView('home');
+            } catch (err) {
+                alert('Signup failed: ' + err.message);
+            }
+        }
+
+        // Tab switching
+        function initLoginModalTabs() {
+            const loginTab = document.getElementById('loginTabBtn');
+            const signupTab = document.getElementById('signupTabBtn');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            if (!loginTab || !signupTab) return;
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('border-b-2', 'border-primary', 'text-white');
+                signupTab.classList.remove('border-b-2', 'border-primary', 'text-white');
+                signupTab.classList.add('text-[var(--text-muted)]');
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+            });
+            signupTab.addEventListener('click', () => {
+                signupTab.classList.add('border-b-2', 'border-primary', 'text-white');
+                loginTab.classList.remove('border-b-2', 'border-primary', 'text-white');
+                loginTab.classList.add('text-[var(--text-muted)]');
+                signupForm.style.display = 'block';
+                loginForm.style.display = 'none';
+            });
+            const switchToLogin = document.getElementById('switchToLogin');
+            if (switchToLogin) {
+                switchToLogin.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loginTab.click();
+                });
+            }
+        }
+
+        function openLogin() {
+            document.getElementById('loginModal').style.display = 'flex';
+            initLoginModalTabs();
+        }
         function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
 
         // ========== SIDEBAR & VIEW HELPERS ==========
@@ -607,7 +677,6 @@
                 if (!res.ok) throw new Error(data.error || 'Failed to add student');
                 alert('Student added');
                 await loadAllData();
-                // Clear form
                 document.getElementById('newName').value = '';
                 document.getElementById('newEmail').value = '';
                 document.getElementById('newQuote').value = '';
@@ -711,10 +780,7 @@
         }
 
         // ========== RENDER FUNCTIONS ==========
-        // (These functions are the same as before – they use `allStudents` and `allMemories`.)
-        // For brevity, I'll keep them as they were in the previous working version.
-        // They are already correct and will use the mapped IDs.
-
+        // (All render functions are the same as before – they use allStudents and allMemories)
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
@@ -801,7 +867,7 @@
             const filtered = allStudents.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
             container.innerHTML = filtered.map(s => `
                 <div class="student-card bg-[var(--surface-solid)] rounded-3xl p-5 flex flex-col items-center border border-[var(--border-line)] interactive-card cursor-pointer" onclick="openStudentModal('${s.id}')">
-                    <img src="${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff`}" class="w-20 h-20 rounded-full object-cover border-4 border-[var(--bg)] shadow-lg">
+                    <img src="${s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff`}" class="w-20 h-20 rounded-full object-cover border-4 border-[var(--bg)] shadow-lg">
                     <h3 class="font-bold text-lg text-[var(--text-main)] mt-3 text-center">${escapeHtml(s.name)}</h3>
                     <p class="text-[var(--text-muted)] text-sm mt-2 text-center italic">"${escapeHtml(s.quote || 'No quote yet')}"</p>
                 </div>
@@ -818,7 +884,7 @@
                         <div class="relative p-6 md:p-8">
                             <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
                             <div class="flex flex-col items-center text-center">
-                                <img src="${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4">
+                                <img src="${s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4">
                                 <h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(s.name)}</h2>
                                 <p class="text-[var(--text-muted)] mt-1">${escapeHtml(s.email)}</p>
                                 <div class="mt-5 w-full space-y-4">
@@ -853,7 +919,7 @@
             grid.innerHTML = allMemories.map((p) => {
                 const title = escapeHtml(p.content?.split('\n')[0] || 'Memory');
                 const desc = escapeHtml(p.content?.split('\n').slice(1).join(' ') || '');
-                const image = p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800';
+                const image = p.image ? (p.image.startsWith('http') ? p.image : `${API_BASE.replace('/api', '')}${p.image}`) : 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800';
                 return `<div class="masonry-item memory-card group cursor-pointer"><div class="rounded-2xl overflow-hidden relative glass"><img src="${image}" class="w-full object-cover" alt="${title}"><div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-100 flex flex-col justify-end p-4"><p class="text-white font-bold text-lg">${title}</p>${desc ? `<p class="text-white/85 text-sm mt-1">${desc}</p>` : ''}<div class="mt-3 flex items-center justify-between gap-2"><span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>${currentUser && currentUser.isAdmin ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div></div>`;
             }).join('');
         }
@@ -899,7 +965,7 @@
             document.getElementById('view-admin').innerHTML = `
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
                     <div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Admin</span> <span class="gradient-text">Panel</span></h1><p class="text-[var(--text-muted)] mt-2">Manage students and memories</p></div>
-                    <div class="glass rounded-2xl p-6 mb-8"><h3 class="text-xl font-bold mb-4">Add New Student</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" id="newName" placeholder="Full Name" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="email" id="newEmail" placeholder="Email" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><textarea id="newQuote" placeholder="Quote / Motto" rows="2" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"></textarea><input type="text" id="newDream" placeholder="Dream / Aspiration" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newHobby" placeholder="Hobby / Passion" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newAspiration" placeholder="Aspiration (Life Goal)" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newFunFact" placeholder="Fun Fact" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><div class="col-span-2"><label class="block text-sm text-[var(--text-muted)] mb-1">Profile Photo</label><input type="file" id="newPhoto" accept="image/*" class="hidden"><div class="flex items-center gap-2"><button onclick="document.getElementById('newPhoto').click()" class="file-upload-btn"><i class="fas fa-upload mr-1"></i> Choose Photo</button><span id="file-name" class="file-name">No file chosen</span></div></div></div><button onclick="addStudentFromForm()" class="mt-4 px-6 py-2 bg-[var(--primary)] text-white rounded-xl">Add Student</button></div>
+                    <div class="glass rounded-2xl p-6 mb-8"><h3 class="text-xl font-bold mb-4">Add New Student</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" id="newName" placeholder="Full Name" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><textarea id="newQuote" placeholder="Quote / Motto" rows="2" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"></textarea><input type="text" id="newDream" placeholder="Dream / Aspiration" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newHobby" placeholder="Hobby / Passion" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newAspiration" placeholder="Aspiration (Life Goal)" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newFunFact" placeholder="Fun Fact" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><div class="col-span-2"><label class="block text-sm text-[var(--text-muted)] mb-1">Profile Photo</label><input type="file" id="newPhoto" accept="image/*" class="hidden"><div class="flex items-center gap-2"><button onclick="document.getElementById('newPhoto').click()" class="file-upload-btn"><i class="fas fa-upload mr-1"></i> Choose Photo</button><span id="file-name" class="file-name">No file chosen</span></div></div></div><button onclick="addStudentFromForm()" class="mt-4 px-6 py-2 bg-[var(--primary)] text-white rounded-xl">Add Student</button></div>
                     <div class="glass rounded-2xl p-6 mb-8"><h3 class="text-xl font-bold mb-4">Create Memory Post</h3><div class="grid grid-cols-1 gap-4"><input type="text" id="postTitle" placeholder="Title" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><textarea id="postContent" placeholder="Description" rows="3" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"></textarea><div><input type="file" id="postImage" accept="image/*" class="hidden"><button onclick="document.getElementById('postImage').click()" class="file-upload-btn"><i class="fas fa-image mr-1"></i> Add Image</button><span id="post-file-name" class="file-name ml-2">No file chosen</span></div><button onclick="createPostFromForm()" class="mt-2 px-6 py-2 bg-[var(--primary)] text-white rounded-xl">Create Memory</button></div></div>
                     <div class="glass rounded-2xl p-6"><h3 class="text-xl font-bold mb-4">Manage Students</h3><div id="adminStudentList" class="space-y-2 max-h-96 overflow-y-auto">${studentListHtml}</div></div>
                 </div>
