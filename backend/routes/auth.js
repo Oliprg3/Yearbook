@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
-const cloudinary = require('cloudinary').v2; // <-- ADD THIS
 
 const router = express.Router();
 
@@ -75,7 +74,6 @@ router.get('/me', auth, async (req, res) => {
 
 // ========== ADMIN-ONLY: CREATE STUDENT (with photo, email optional) ==========
 router.post('/register', auth, (req, res, next) => {
-    // Use the upload instance attached to the app (memory storage)
     req.app.locals.upload.single('profileImage')(req, res, async (err) => {
         if (err) return res.status(400).json({ error: err.message });
 
@@ -114,13 +112,12 @@ router.post('/register', auth, (req, res, next) => {
                 }
             }
 
-            // Upload image to Cloudinary if present
+            // Convert image to Base64 data URL (if present)
             let profileImage = null;
-                 if (req.file) {
-    // Convert image buffer to Base64 string
-                   const base64 = req.file.buffer.toString('base64');
-                   profileImage = `data:${req.file.mimetype};base64,${base64}`;
-}
+            if (req.file) {
+                const base64 = req.file.buffer.toString('base64');
+                profileImage = `data:${req.file.mimetype};base64,${base64}`;
+            }
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const newStudent = new User({
@@ -134,8 +131,8 @@ router.post('/register', auth, (req, res, next) => {
                 funFact: funFact || '',
                 year: year || 2027,
                 isAdmin: false,
-                isStudent: true,                    // <-- ADDED
-                                   // <-- Cloudinary URL
+                isStudent: true,
+                profileImage
             });
 
             await newStudent.save();
