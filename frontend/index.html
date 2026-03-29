@@ -966,7 +966,30 @@
         </section>
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20">
-            <div class="text-center mb-10 md:mb-12"><h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-[var(--text-main)]">Highlights</h2><p class="text-[var(--text-muted)]">Discover what makes our 11G class unique</p></div>
+            <div class="text-center mb-10 md:mb-12">
+                <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-[var(--text-main)]">Journey by the Numbers</h2>
+                <p class="text-[var(--text-muted)]">Our collective impact and milestones</p>
+            </div>
+            
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+                <div class="glass p-6 md:p-8 rounded-3xl border border-[var(--border-line)] text-center group hover:border-[var(--primary)]/50 transition-all duration-300">
+                    <div class="text-3xl md:text-5xl font-black gradient-text mb-2">${studentCount}</div>
+                    <div class="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">Students</div>
+                </div>
+                <div class="glass p-6 md:p-8 rounded-3xl border border-[var(--border-line)] text-center group hover:border-[var(--secondary)]/50 transition-all duration-300">
+                    <div class="text-3xl md:text-5xl font-black gradient-text mb-2" style="background: linear-gradient(135deg, #d946ef, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${postCount}</div>
+                    <div class="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">Memories</div>
+                </div>
+                <div class="glass p-6 md:p-8 rounded-3xl border border-[var(--border-line)] text-center group hover:border-[var(--accent)]/50 transition-all duration-300">
+                    <div class="text-3xl md:text-5xl font-black gradient-text mb-2" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${daysLeft}</div>
+                    <div class="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">Days to Grad</div>
+                </div>
+                <div class="glass p-6 md:p-8 rounded-3xl border border-[var(--border-line)] text-center group hover:border-[var(--primary)]/50 transition-all duration-300">
+                    <div class="text-3xl md:text-5xl font-black gradient-text mb-2">11G</div>
+                    <div class="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">Current Grade</div>
+                </div>
+            </div>
+
             <div class="bento-grid" id="statsBento"></div>
         </section>
 
@@ -977,8 +1000,11 @@
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="recentMemoriesHome"></div>
         </section>
-    `; // The Stay Connected section was removed from here.
+    `;
 
+    renderStatsBento();
+    renderRecentMemoriesHome();
+}
     document.getElementById('statsBento').innerHTML = `
         <div class="bento-item bento-large">
             <div>
