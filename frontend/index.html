@@ -326,7 +326,6 @@
             transition: background 0.2s;
         }
         .danger-btn:hover { background: #dc2626; }
-        /* Image Zoom Modal */
         .image-zoom-modal {
             position: fixed;
             inset: 0;
@@ -359,17 +358,31 @@
         .student-profile-img {
             cursor: pointer;
         }
-        /* Students grid - normal vertical yearbook layout (no horizontal scroll) */
+        /* Students grid - responsive with 2 columns on mobile, more on larger screens */
         .students-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        @media (min-width: 640px) {
+            .students-grid {
+                gap: 1.5rem;
+            }
+        }
+        @media (min-width: 768px) {
+            .students-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (min-width: 1024px) {
+            .students-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
         .student-card {
             background: var(--surface-solid);
             border-radius: 1.5rem;
-            padding: 1.5rem;
+            padding: 1.25rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -380,6 +393,15 @@
             transform: translateY(-4px);
             border-color: rgba(139, 92, 246, 0.3);
             box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.2);
+        }
+        @media (max-width: 480px) {
+            .student-card {
+                padding: 1rem;
+            }
+            .student-card .w-32 {
+                width: 5rem;
+                height: 5rem;
+            }
         }
     </style>
 </head>
@@ -954,7 +976,6 @@
                             <div class="flex flex-col items-center text-center">
                                 <img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')">
                                 <h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(s.name)}</h2>
-                                <p class="text-[var(--text-muted)] mt-1">${escapeHtml(s.email)}</p>
                                 <div class="mt-5 w-full space-y-4">
                                     <div class="glass rounded-2xl p-4"><i class="fas fa-quote-left text-[var(--primary)]/40 mr-2"></i><p class="text-[var(--text-main)] italic">"${escapeHtml(s.quote || 'No quote yet')}"</p></div>
                                     <div class="grid grid-cols-1 gap-3"><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-star text-yellow-400 w-6"></i><span class="font-semibold">Dream:</span><span>${escapeHtml(s.dream || '—')}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-heart text-pink-400 w-6"></i><span class="font-semibold">Hobby:</span><span>${escapeHtml(s.hobby || '—')}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-rocket text-purple-400 w-6"></i><span class="font-semibold">Aspiration:</span><span>${escapeHtml(s.aspiration || '—')}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-smile-wink text-green-400 w-6"></i><span class="font-semibold">Fun Fact:</span><span>${escapeHtml(s.funFact || '—')}</span></div></div>
