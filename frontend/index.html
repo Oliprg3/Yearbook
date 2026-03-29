@@ -358,7 +358,7 @@
         .student-profile-img {
             cursor: pointer;
         }
-        /* Students grid - responsive with 2 columns on mobile, more on larger screens */
+        /* Students grid - 2 columns on mobile, more on larger */
         .students-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -402,6 +402,19 @@
                 width: 5rem;
                 height: 5rem;
             }
+        }
+        .photo-change-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+        .photo-change-btn:hover {
+            background: #7c3aed;
         }
     </style>
 </head>
@@ -805,6 +818,33 @@
             }
         }
 
+        // NEW: Update student photo without deleting
+        async function updateStudentPhoto(id) {
+            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can change photos');
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append('profileImage', file);
+                try {
+                    const res = await fetch(`${API_BASE}/profile/update/${id}`, {
+                        method: 'PUT',
+                        headers: { 'x-auth-token': token },
+                        body: formData
+                    });
+                    if (!res.ok) throw new Error('Upload failed');
+                    alert('Photo updated successfully');
+                    await loadAllData();
+                } catch (err) {
+                    alert('Error updating photo: ' + err.message);
+                }
+            };
+            input.click();
+        }
+
         async function deleteStudent(id) {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete');
             if (!confirm('Delete this student?')) return;
@@ -1062,7 +1102,16 @@
                 document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Access denied. Admin only.</div>`;
                 return;
             }
-            const studentListHtml = allStudents.map(s => `<div class="flex justify-between items-center p-3 border-b border-[var(--border-line)]"><span>${escapeHtml(s.name)} (${escapeHtml(s.email)})</span><div><button onclick="editStudent('${s.id}')" class="text-blue-400 mr-2"><i class="fas fa-edit"></i></button><button onclick="deleteStudent('${s.id}')" class="text-red-400"><i class="fas fa-trash"></i></button></div></div>`).join('');
+            const studentListHtml = allStudents.map(s => `
+                <div class="flex justify-between items-center p-3 border-b border-[var(--border-line)] flex-wrap gap-2">
+                    <span>${escapeHtml(s.name)} (${escapeHtml(s.email)})</span>
+                    <div class="flex gap-2">
+                        <button onclick="editStudent('${s.id}')" class="text-blue-400" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button onclick="updateStudentPhoto('${s.id}')" class="text-green-400" title="Change Photo"><i class="fas fa-camera"></i></button>
+                        <button onclick="deleteStudent('${s.id}')" class="text-red-400" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
             document.getElementById('view-admin').innerHTML = `
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
                     <div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Admin</span> <span class="gradient-text">Panel</span></h1><p class="text-[var(--text-muted)] mt-2">Manage students and memories</p></div>
@@ -1113,6 +1162,7 @@
         window.deleteMemory = deleteMemory;
         window.editStudent = editStudent;
         window.deleteStudent = deleteStudent;
+        window.updateStudentPhoto = updateStudentPhoto;
         window.showView = showView;
         window.closeStudentModal = closeStudentModal;
         window.addStudentFromForm = addStudentFromForm;
