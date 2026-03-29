@@ -358,26 +358,19 @@
         .student-profile-img {
             cursor: pointer;
         }
-        /* Students grid - 2 columns on mobile, more on larger */
         .students-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
         }
         @media (min-width: 640px) {
-            .students-grid {
-                gap: 1.5rem;
-            }
+            .students-grid { gap: 1.5rem; }
         }
         @media (min-width: 768px) {
-            .students-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
+            .students-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @media (min-width: 1024px) {
-            .students-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
+            .students-grid { grid-template-columns: repeat(4, 1fr); }
         }
         .student-card {
             background: var(--surface-solid);
@@ -395,26 +388,26 @@
             box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.2);
         }
         @media (max-width: 480px) {
-            .student-card {
-                padding: 1rem;
-            }
-            .student-card .w-32 {
-                width: 5rem;
-                height: 5rem;
-            }
+            .student-card { padding: 1rem; }
+            .student-card .w-32 { width: 5rem; height: 5rem; }
         }
-        .photo-change-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.7rem;
-            cursor: pointer;
-            margin-left: 0.5rem;
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
         }
-        .photo-change-btn:hover {
-            background: #7c3aed;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-loading {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -500,7 +493,7 @@
                     <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
                     <input type="password" id="loginPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
                 </div>
-                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Sign In</button>
+                <button type="submit" id="loginSubmitBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold flex items-center justify-center">Sign In</button>
             </form>
             <form id="signupForm" style="display: none;" onsubmit="event.preventDefault(); handleSignup();" class="space-y-4">
                 <div class="relative">
@@ -515,9 +508,10 @@
                     <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
                     <input type="password" id="signupPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
                 </div>
-                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Create Account</button>
+                <button type="submit" id="signupSubmitBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold flex items-center justify-center">Create Account</button>
                 <p class="text-center text-sm text-[var(--text-muted)]">Already have an account? <a href="#" id="switchToLogin" class="text-[var(--primary)] hover:underline">Sign In</a></p>
             </form>
+            <div id="loginStatusMsg" class="text-center text-sm mt-4 text-yellow-300"></div>
         </div>
     </div>
 
@@ -532,6 +526,15 @@
         let currentUser = null;
         let allStudents = [];
         let allMemories = [];
+
+        // Pre-warm the server on page load (silent ping)
+        async function warmUpServer() {
+            try {
+                await fetch(`${API_BASE}/auth/me`, { method: 'GET', headers: { 'x-auth-token': token || '' } });
+                console.log('Server warmed up');
+            } catch(e) { console.log('Warm-up ping sent'); }
+        }
+        warmUpServer();
 
         function escapeHtml(str = '') {
             return String(str)
@@ -586,10 +589,30 @@
             }
         }
 
+        function setButtonLoading(btn, isLoading, originalText) {
+            if (isLoading) {
+                btn.disabled = true;
+                btn.classList.add('btn-loading');
+                btn.innerHTML = '<span class="spinner"></span>' + originalText;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('btn-loading');
+                btn.innerHTML = originalText;
+            }
+        }
+
         async function handleLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
-            if (!email || !password) return alert('Please fill all fields');
+            if (!email || !password) {
+                document.getElementById('loginStatusMsg').innerText = 'Please fill all fields';
+                return;
+            }
+
+            const submitBtn = document.getElementById('loginSubmitBtn');
+            const originalText = submitBtn.innerText;
+            setButtonLoading(submitBtn, true, originalText);
+            document.getElementById('loginStatusMsg').innerText = 'Connecting to server...';
 
             try {
                 const res = await fetch(`${API_BASE}/auth/login`, {
@@ -605,8 +628,11 @@
                 await loadAllData();
                 closeLogin();
                 showView('home');
+                document.getElementById('loginStatusMsg').innerText = '';
             } catch (err) {
-                alert('Login failed: ' + err.message);
+                document.getElementById('loginStatusMsg').innerText = 'Login failed: ' + err.message;
+            } finally {
+                setButtonLoading(submitBtn, false, originalText);
             }
         }
 
@@ -614,7 +640,15 @@
             const name = document.getElementById('signupName').value.trim();
             const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
-            if (!name || !email || !password) return alert('Please fill all fields');
+            if (!name || !email || !password) {
+                document.getElementById('loginStatusMsg').innerText = 'Please fill all fields';
+                return;
+            }
+
+            const submitBtn = document.getElementById('signupSubmitBtn');
+            const originalText = submitBtn.innerText;
+            setButtonLoading(submitBtn, true, originalText);
+            document.getElementById('loginStatusMsg').innerText = 'Creating account...';
 
             try {
                 const res = await fetch(`${API_BASE}/auth/signup`, {
@@ -630,8 +664,11 @@
                 await loadAllData();
                 closeLogin();
                 showView('home');
+                document.getElementById('loginStatusMsg').innerText = '';
             } catch (err) {
-                alert('Signup failed: ' + err.message);
+                document.getElementById('loginStatusMsg').innerText = 'Signup failed: ' + err.message;
+            } finally {
+                setButtonLoading(submitBtn, false, originalText);
             }
         }
 
@@ -647,6 +684,7 @@
                 signupTab.classList.add('text-[var(--text-muted)]');
                 loginForm.style.display = 'block';
                 signupForm.style.display = 'none';
+                document.getElementById('loginStatusMsg').innerText = '';
             });
             signupTab.addEventListener('click', () => {
                 signupTab.classList.add('border-b-2', 'border-primary', 'text-white');
@@ -654,6 +692,7 @@
                 loginTab.classList.add('text-[var(--text-muted)]');
                 signupForm.style.display = 'block';
                 loginForm.style.display = 'none';
+                document.getElementById('loginStatusMsg').innerText = '';
             });
             const switchToLogin = document.getElementById('switchToLogin');
             if (switchToLogin) {
@@ -818,7 +857,6 @@
             }
         }
 
-        // NEW: Update student photo without deleting
         async function updateStudentPhoto(id) {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can change photos');
             const input = document.createElement('input');
@@ -901,6 +939,7 @@
             }
         }
 
+        // ---- RENDER FUNCTIONS (abbreviated for brevity, but full as before) ----
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
