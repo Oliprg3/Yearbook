@@ -353,12 +353,48 @@
             from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-        /* Make memory images clickable */
         .memory-img-container {
             cursor: pointer;
         }
         .student-profile-img {
             cursor: pointer;
+        }
+        /* Horizontal scroll for student cards on mobile */
+        .student-scroll-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            scroll-snap-type: x mandatory;
+        }
+        .student-scroll-container .student-card {
+            flex: 0 0 auto;
+            width: 280px;
+            scroll-snap-align: start;
+        }
+        @media (min-width: 768px) {
+            .student-scroll-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+                overflow-x: visible;
+                scroll-snap-type: none;
+            }
+            .student-scroll-container .student-card {
+                width: auto;
+                scroll-snap-align: none;
+            }
+        }
+        @media (min-width: 1024px) {
+            .student-scroll-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (min-width: 1280px) {
+            .student-scroll-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
     </style>
 </head>
@@ -431,12 +467,10 @@
                 <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to Novus</h2>
                 <p class="text-[var(--text-muted)] text-sm">Sign in to explore the yearbook</p>
             </div>
-            <!-- Tabs -->
             <div class="flex gap-2 mb-6 border-b border-white/10">
                 <button id="loginTabBtn" class="flex-1 py-2 text-white font-semibold border-b-2 border-primary">Sign In</button>
                 <button id="signupTabBtn" class="flex-1 py-2 text-[var(--text-muted)] font-semibold">Sign Up</button>
             </div>
-            <!-- Login Form -->
             <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
                 <div class="relative">
                     <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
@@ -448,7 +482,6 @@
                 </div>
                 <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Sign In</button>
             </form>
-            <!-- Signup Form -->
             <form id="signupForm" style="display: none;" onsubmit="event.preventDefault(); handleSignup();" class="space-y-4">
                 <div class="relative">
                     <i class="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
@@ -468,13 +501,11 @@
         </div>
     </div>
 
-    <!-- Image Zoom Modal -->
     <div id="imageZoomModal" class="image-zoom-modal" onclick="closeImageZoom()">
         <img id="zoomImage" src="" alt="Zoomed image">
     </div>
 
     <script>
-        // ========== BACKEND CONFIGURATION ==========
         const API_BASE = 'https://yearbook2.onrender.com/api';
 
         let token = localStorage.getItem('token');
@@ -482,7 +513,6 @@
         let allStudents = [];
         let allMemories = [];
 
-        // Helper: escape HTML
         function escapeHtml(str = '') {
             return String(str)
                 .replace(/&/g, '&amp;')
@@ -492,7 +522,6 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // Helper: fetch with auth header
         async function authFetch(endpoint, options = {}) {
             const headers = {
                 'Content-Type': 'application/json',
@@ -507,7 +536,6 @@
             return res.json();
         }
 
-        // Image zoom functions
         function openImageZoom(imageUrl) {
             const modal = document.getElementById('imageZoomModal');
             const zoomImg = document.getElementById('zoomImage');
@@ -520,7 +548,6 @@
             modal.classList.remove('active');
         }
 
-        // ========== DATA LOADING ==========
         async function loadAllData() {
             if (!token) return;
             try {
@@ -539,7 +566,6 @@
             }
         }
 
-        // ========== AUTHENTICATION ==========
         async function handleLogin() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
@@ -589,7 +615,6 @@
             }
         }
 
-        // Tab switching
         function initLoginModalTabs() {
             const loginTab = document.getElementById('loginTabBtn');
             const signupTab = document.getElementById('signupTabBtn');
@@ -625,7 +650,6 @@
         }
         function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
 
-        // ========== SIDEBAR & VIEW HELPERS ==========
         let isSidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
         function toggleSidebar() {
             isSidebarCollapsed = !isSidebarCollapsed;
@@ -693,7 +717,6 @@
             closeMobileSidebar();
         }
 
-        // ========== ADMIN FUNCTIONS (students) ==========
         async function addStudentFromForm() {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can add students');
 
@@ -707,11 +730,7 @@
             const photoFile = document.getElementById('newPhoto').files[0];
 
             if (!name) return alert('Name is required');
-
-             if (!email) {
-        email = `student-${Date.now()}@novus.local`;
-    }
-
+            if (!email) email = `student-${Date.now()}@novus.local`;
 
             const formData = new FormData();
             formData.append('name', name);
@@ -790,7 +809,6 @@
             }
         }
 
-        // ========== MEMORY FUNCTIONS ==========
         async function createPostFromForm() {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can create memories');
 
@@ -836,7 +854,6 @@
             }
         }
 
-        // ========== RENDER FUNCTIONS ==========
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
@@ -911,7 +928,7 @@
             grid.innerHTML = `
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
                     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">11G Classmates</span></h1><p class="text-[var(--text-muted)] mt-2">Meet the incredible Class of 2026/27</p></div><div class="relative w-full md:w-80"><i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i><input type="text" id="studentSearch" placeholder="Search by name..." oninput="filterStudents(this.value)" class="w-full bg-[var(--surface)] border border-[var(--border-line)] rounded-full py-3 pl-12 pr-4 text-sm focus:border-[var(--primary)] focus:outline-none"></div></div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" id="studentGrid"></div>
+                    <div class="student-scroll-container" id="studentGrid"></div>
                 </div>
             `;
             renderStudentGrid();
@@ -922,10 +939,10 @@
             if (!container) return;
             const filtered = allStudents.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
             container.innerHTML = filtered.map(s => {
-                const imgUrl = s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff`;
+                const imgUrl = s.profileImage ? (s.profileImage.startsWith('http') ? s.profileImage : `${API_BASE.replace('/api', '')}${s.profileImage}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`;
                 return `<div class="student-card bg-[var(--surface-solid)] rounded-3xl p-5 flex flex-col items-center border border-[var(--border-line)] interactive-card cursor-pointer" onclick="openStudentModal('${s.id}')">
-                            <img src="${imgUrl}" class="w-20 h-20 rounded-full object-cover border-4 border-[var(--bg)] shadow-lg student-profile-img" onclick="event.stopPropagation(); openImageZoom('${imgUrl}')">
-                            <h3 class="font-bold text-lg text-[var(--text-main)] mt-3 text-center">${escapeHtml(s.name)}</h3>
+                            <img src="${imgUrl}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-lg student-profile-img" onclick="event.stopPropagation(); openImageZoom('${imgUrl}')">
+                            <h3 class="font-bold text-xl text-[var(--text-main)] mt-4 text-center">${escapeHtml(s.name)}</h3>
                             <p class="text-[var(--text-muted)] text-sm mt-2 text-center italic">"${escapeHtml(s.quote || 'No quote yet')}"</p>
                         </div>`;
             }).join('');
@@ -942,7 +959,7 @@
                         <div class="relative p-6 md:p-8">
                             <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
                             <div class="flex flex-col items-center text-center">
-                                <img src="${imgUrl}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')">
+                                <img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')">
                                 <h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(s.name)}</h2>
                                 <p class="text-[var(--text-muted)] mt-1">${escapeHtml(s.email)}</p>
                                 <div class="mt-5 w-full space-y-4">
@@ -1055,7 +1072,6 @@
             renderAdminPanel();
         }
 
-        // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', async () => {
             if (localStorage.getItem('theme') === 'light') {
                 document.documentElement.classList.remove('dark');
