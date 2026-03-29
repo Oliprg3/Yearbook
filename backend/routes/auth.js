@@ -38,7 +38,6 @@ router.post('/signup', async (req, res) => {
             isAdmin: false,
             isStudent: false, // not added to student list
         });
-
         await user.save();
 
         const payload = { user: { id: user.id, email: user.email, isAdmin: user.isAdmin } };
@@ -68,15 +67,15 @@ router.post('/login', async (req, res) => {
         const payload = { user: { id: user.id, email: user.email, isAdmin: user.isAdmin } };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-        res.json({
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email,
+        res.json({ 
+            token, 
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                email, 
                 isAdmin: user.isAdmin,
-                profileImage: user.profileImage
-            }
+                profileImage: user.profileImage 
+            } 
         });
     } catch (err) {
         console.error('Login error:', err);
@@ -96,7 +95,9 @@ router.get('/me', auth, async (req, res) => {
 });
 
 // ========== ADMIN-ONLY: CREATE STUDENT (with photo) ==========
+// This route uses Cloudinary for permanent image storage
 router.post('/register', auth, (req, res, next) => {
+    // Use the upload instance attached to the app (configured in server.js)
     req.app.locals.upload.single('profileImage')(req, res, async (err) => {
         if (err) return res.status(400).json({ error: err.message });
 
@@ -107,7 +108,6 @@ router.post('/register', auth, (req, res, next) => {
             }
 
             const { name, email, password, quote, dream, hobby, aspiration, funFact, year } = req.body;
-
             if (!name || !email || !password) {
                 return res.status(400).json({ error: 'Name, email, and password required' });
             }
@@ -116,18 +116,16 @@ router.post('/register', auth, (req, res, next) => {
             if (existing) return res.status(400).json({ error: 'User already exists' });
 
             let profileImageUrl = null;
-
             if (req.file) {
+                // Upload to Cloudinary instead of saving locally
                 const result = await uploadToCloudinary(req.file.buffer, {
                     folder: 'novus-yearbook/profiles'
                 });
-
                 profileImageUrl = result.secure_url;
                 console.log('✅ Image uploaded to Cloudinary:', profileImageUrl);
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-
             const newStudent = new User({
                 name,
                 email,
@@ -139,22 +137,16 @@ router.post('/register', auth, (req, res, next) => {
                 funFact: funFact || '',
                 year: year || 2027,
                 isAdmin: false,
-                isStudent: true,
-                profileImage: profileImageUrl
+                isStudent: true,          // <-- mark as a student (appears in student list)
+                profileImage: profileImageUrl  // Cloudinary URL instead of local path
             });
 
             await newStudent.save();
 
             res.json({
                 message: 'Student created successfully',
-                user: {
-                    id: newStudent.id,
-                    name,
-                    email,
-                    profileImage: newStudent.profileImage
-                }
+                user: { id: newStudent.id, name, email, profileImage: newStudent.profileImage }
             });
-
         } catch (err) {
             console.error('Admin create student error:', err);
             res.status(500).json({ error: 'Server error', details: err.message });
