@@ -12,7 +12,9 @@ const UserSchema = new mongoose.Schema({
     profileImage: { type: String, default: null },
     year: { type: Number, default: 2027 },
     isAdmin: { type: Boolean, default: false },
-    isStudent: { type: Boolean, default: false }   // ← NEW FIELD
+    isStudent: { type: Boolean, default: false },
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
