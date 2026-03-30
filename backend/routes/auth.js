@@ -3,8 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
-const admin = require('firebase-admin');   // <-- new import
-
+const admin = require('firebase-admin');   // <-- new impor
 // Initialize Firebase Admin SDK (only once)
 if (!admin.apps.length) {
   // Adjust the path to where your serviceAccountKey.json is located
