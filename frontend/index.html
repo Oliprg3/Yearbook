@@ -583,6 +583,7 @@
         }
 
         async function checkAdminStatusByUID(uid) {
+            if (!uid) return false;
             try {
                 const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, "admins", uid));
                 return adminDoc.exists() && adminDoc.data().isAdmin === true;
@@ -598,11 +599,13 @@
                 const userData = await authFetch('/auth/me');
                 currentUser = userData;
 
+                // Determine admin status – safe check for uid
                 let isAdmin = false;
-                if (currentUser.uid) {
+                if (currentUser && currentUser.uid) {
                     isAdmin = await checkAdminStatusByUID(currentUser.uid);
                 }
-                if (!isAdmin && currentUser.email === 'adminof11g@gmail.com') {
+                // Hardcoded fallback for the main admin email
+                if (!isAdmin && currentUser && currentUser.email === 'adminof11g@gmail.com') {
                     isAdmin = true;
                     console.log('✅ Hardcoded admin email detected:', currentUser.email);
                 }
@@ -615,9 +618,9 @@
                 allMemories = allMemories.map(p => ({ ...p, id: p._id }));
                 renderAllViews();
 
-                if (currentUser.profileImage) {
+                if (currentUser && currentUser.profileImage) {
                     document.getElementById('headerAvatar').src = currentUser.profileImage;
-                } else {
+                } else if (currentUser && currentUser.name) {
                     document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=8b5cf6&color=fff`;
                 }
             } catch (err) {
@@ -658,6 +661,7 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Google sign-in failed');
 
+            // Ensure the user object includes the uid (your backend must provide it)
             data.user.uid = uid;
             data.user.authProvider = 'google';
             token = data.token;
@@ -665,7 +669,7 @@
             await loadAllData();
             closeLogin();
             showView('home');
-            statusMsg.innerText = '';
+            document.getElementById('loginStatusMsg').innerText = '';
         }
 
         async function handleRedirectResult() {
