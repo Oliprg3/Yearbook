@@ -49,8 +49,7 @@
     </script>
 
     <style>
-        /* ===================== FULL CSS ===================== */
-        /* (Same as your original working styles – copied from your previous version) */
+        /* ========== ALL YOUR ORIGINAL CSS (keep exactly as before) ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -521,13 +520,49 @@
         </main>
     </div>
 
-    <!-- Login Modal – only Google button -->
     <div id="loginModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onclick="closeLogin()">
-        <div class="glass-strong p-8 md:p-10 rounded-3xl w-[90%] max-w-md relative border border-white/10 shadow-2xl text-center" onclick="event.stopPropagation()">
-            <img src="novus.jpg" alt="Novus logo" class="login-logo mx-auto mb-4">
-            <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to Novus</h2>
-            <p class="text-[var(--text-muted)] mb-6">Sign in with your Google account to explore the yearbook</p>
-            <button id="googleSignInBtn" class="google-btn w-full flex items-center justify-center gap-3">
+        <div class="glass-strong p-8 md:p-10 rounded-3xl w-[90%] max-w-md relative border border-white/10 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="text-center mb-8">
+                <img src="novus.jpg" alt="Novus logo" class="login-logo mx-auto mb-4">
+                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to Novus</h2>
+                <p class="text-[var(--text-muted)] text-sm">Sign in to explore the yearbook</p>
+            </div>
+            <div class="flex gap-2 mb-6 border-b border-white/10">
+                <button id="loginTabBtn" class="flex-1 py-2 text-white font-semibold border-b-2 border-primary">Sign In</button>
+                <button id="signupTabBtn" class="flex-1 py-2 text-[var(--text-muted)] font-semibold">Sign Up</button>
+            </div>
+            <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="email" id="loginEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="password" id="loginPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <button type="submit" id="loginSubmitBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold flex items-center justify-center">Sign In</button>
+            </form>
+            <form id="signupForm" style="display: none;" onsubmit="event.preventDefault(); handleSignup();" class="space-y-4">
+                <div class="relative">
+                    <i class="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="text" id="signupName" placeholder="Full Name" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="email" id="signupEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
+                    <input type="password" id="signupPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                </div>
+                <button type="submit" id="signupSubmitBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold flex items-center justify-center">Create Account</button>
+                <p class="text-center text-sm text-[var(--text-muted)]">Already have an account? <a href="#" id="switchToLogin" class="text-[var(--primary)] hover:underline">Sign In</a></p>
+            </form>
+            <div class="relative my-4">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
+                <div class="relative flex justify-center text-xs uppercase"><span class="bg-[var(--surface-solid)] px-2 text-[var(--text-muted)]">Or continue with</span></div>
+            </div>
+            <button id="googleSignInBtn" class="google-btn">
                 <svg width="20" height="20" viewBox="0 0 48 48">
                     <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
                     <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
@@ -552,7 +587,6 @@
         let allStudents = [];
         let allMemories = [];
 
-        // Helper: escape HTML
         function escapeHtml(str = '') {
             return String(str)
                 .replace(/&/g, '&amp;')
@@ -562,7 +596,6 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // Authenticated fetch to backend
         async function authFetch(endpoint, options = {}) {
             const headers = {
                 'Content-Type': 'application/json',
@@ -577,7 +610,18 @@
             return res.json();
         }
 
-        // Load all data from backend
+        function openImageZoom(imageUrl) {
+            const modal = document.getElementById('imageZoomModal');
+            const zoomImg = document.getElementById('zoomImage');
+            zoomImg.src = imageUrl;
+            modal.classList.add('active');
+        }
+
+        function closeImageZoom() {
+            const modal = document.getElementById('imageZoomModal');
+            modal.classList.remove('active');
+        }
+
         async function loadAllData() {
             if (!token) return;
             try {
@@ -602,7 +646,89 @@
             }
         }
 
-        // Google Sign-In (with popup + redirect fallback)
+        function setButtonLoading(btn, isLoading, originalText) {
+            if (isLoading) {
+                btn.disabled = true;
+                btn.classList.add('btn-loading');
+                btn.innerHTML = '<span class="spinner"></span>' + originalText;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('btn-loading');
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            if (!email || !password) {
+                document.getElementById('loginStatusMsg').innerText = 'Please fill all fields';
+                return;
+            }
+
+            const submitBtn = document.getElementById('loginSubmitBtn');
+            const originalText = submitBtn.innerText;
+            setButtonLoading(submitBtn, true, originalText);
+            document.getElementById('loginStatusMsg').innerText = 'Connecting...';
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Login failed');
+
+                token = data.token;
+                localStorage.setItem('token', token);
+                await loadAllData();
+                closeLogin();
+                showView('home');
+                document.getElementById('loginStatusMsg').innerText = '';
+            } catch (err) {
+                document.getElementById('loginStatusMsg').innerText = 'Login failed: ' + err.message;
+            } finally {
+                setButtonLoading(submitBtn, false, originalText);
+            }
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            if (!name || !email || !password) {
+                document.getElementById('loginStatusMsg').innerText = 'Please fill all fields';
+                return;
+            }
+
+            const submitBtn = document.getElementById('signupSubmitBtn');
+            const originalText = submitBtn.innerText;
+            setButtonLoading(submitBtn, true, originalText);
+            document.getElementById('loginStatusMsg').innerText = 'Creating account...';
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Signup failed');
+
+                token = data.token;
+                localStorage.setItem('token', token);
+                await loadAllData();
+                closeLogin();
+                showView('home');
+                document.getElementById('loginStatusMsg').innerText = '';
+            } catch (err) {
+                document.getElementById('loginStatusMsg').innerText = 'Signup failed: ' + err.message;
+            } finally {
+                setButtonLoading(submitBtn, false, originalText);
+            }
+        }
+
         async function handleGoogleSignIn() {
             const auth = window.firebaseAuth;
             const provider = window.firebaseProvider;
@@ -610,7 +736,6 @@
             statusMsg.innerText = 'Signing in with Google...';
 
             try {
-                // Try popup first
                 let result;
                 try {
                     result = await window.firebaseSignInWithPopup(auth, provider);
@@ -618,13 +743,12 @@
                     if (popupErr.code === 'auth/popup-blocked') {
                         statusMsg.innerText = 'Popup blocked. Redirecting to Google...';
                         await window.firebaseSignInWithRedirect(auth, provider);
-                        return; // will come back via redirect result
+                        return;
                     } else {
                         throw popupErr;
                     }
                 }
 
-                // If we got a result, send token to backend
                 const idToken = await result.user.getIdToken();
                 const res = await fetch(`${API_BASE}/auth/google`, {
                     method: 'POST',
@@ -646,7 +770,6 @@
             }
         }
 
-        // Handle redirect result (for when popup was blocked)
         async function handleRedirectResult() {
             const auth = window.firebaseAuth;
             const result = await window.firebaseGetRedirectResult(auth);
@@ -670,7 +793,6 @@
             }
         }
 
-        // Sign out from both backend and Firebase
         async function handleSignOut() {
             localStorage.removeItem('token');
             token = null;
@@ -681,18 +803,46 @@
                 await window.firebaseSignOut(window.firebaseAuth);
             }
             openLogin();
-            renderAllViews(); // clear views
+            renderAllViews();
         }
 
-        // Open/close login modal
+        function initLoginModalTabs() {
+            const loginTab = document.getElementById('loginTabBtn');
+            const signupTab = document.getElementById('signupTabBtn');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            if (!loginTab || !signupTab) return;
+            loginTab.addEventListener('click', () => {
+                loginTab.classList.add('border-b-2', 'border-primary', 'text-white');
+                signupTab.classList.remove('border-b-2', 'border-primary', 'text-white');
+                signupTab.classList.add('text-[var(--text-muted)]');
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                document.getElementById('loginStatusMsg').innerText = '';
+            });
+            signupTab.addEventListener('click', () => {
+                signupTab.classList.add('border-b-2', 'border-primary', 'text-white');
+                loginTab.classList.remove('border-b-2', 'border-primary', 'text-white');
+                loginTab.classList.add('text-[var(--text-muted)]');
+                signupForm.style.display = 'block';
+                loginForm.style.display = 'none';
+                document.getElementById('loginStatusMsg').innerText = '';
+            });
+            const switchToLogin = document.getElementById('switchToLogin');
+            if (switchToLogin) {
+                switchToLogin.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loginTab.click();
+                });
+            }
+        }
+
         function openLogin() {
             document.getElementById('loginModal').style.display = 'flex';
+            initLoginModalTabs();
         }
-        function closeLogin() {
-            document.getElementById('loginModal').style.display = 'none';
-        }
+        function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
 
-        // Sidebar functions (unchanged)
         let isSidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
         function toggleSidebar() {
             isSidebarCollapsed = !isSidebarCollapsed;
@@ -715,14 +865,21 @@
                 widget.style.display = 'block'; iconWidget.classList.add('hidden'); iconWidget.classList.remove('flex');
             }
         }
+
         function openMobileSidebar() {
-            document.getElementById('sidebar').classList.add('mobile-open');
-            document.getElementById('mobileOverlay').classList.add('active');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.add('mobile-open');
+            overlay.classList.add('active');
         }
+
         function closeMobileSidebar() {
-            document.getElementById('sidebar').classList.remove('mobile-open');
-            document.getElementById('mobileOverlay').classList.remove('active');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
         }
+
         function toggleTheme() {
             const html = document.documentElement;
             const icon = document.getElementById('themeIcon');
@@ -736,28 +893,26 @@
                 localStorage.setItem('theme', 'dark');
             }
         }
+
         function showView(viewName) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             const target = document.getElementById(`view-${viewName}`);
             if (target) target.classList.add('active');
+
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             const activeLink = document.querySelector(`.nav-link[data-view="${viewName}"]`);
-            if (activeLink) activeLink.classList.add('active');
+            if (activeLink) {
+                activeLink.classList.add('active');
+                const existing = activeLink.querySelector('.active-indicator');
+                if (existing) existing.remove();
+                activeLink.insertAdjacentHTML('afterbegin', '<div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--primary)] rounded-r-full"></div>');
+            }
             closeMobileSidebar();
         }
-        function openImageZoom(url) {
-            const modal = document.getElementById('imageZoomModal');
-            const img = document.getElementById('zoomImage');
-            img.src = url;
-            modal.classList.add('active');
-        }
-        function closeImageZoom() {
-            document.getElementById('imageZoomModal').classList.remove('active');
-        }
 
-        // ========== ADMIN FUNCTIONS ==========
         async function addStudentFromForm() {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can add students');
+
             const name = document.getElementById('newName').value.trim();
             let email = document.getElementById('newEmail').value.trim();
             const quote = document.getElementById('newQuote').value.trim();
@@ -766,8 +921,10 @@
             const aspiration = document.getElementById('newAspiration').value.trim();
             const funFact = document.getElementById('newFunFact').value.trim();
             const photoFile = document.getElementById('newPhoto').files[0];
+
             if (!name) return alert('Name is required');
             if (!email) email = `student-${Date.now()}@novus.local`;
+
             const formData = new FormData();
             formData.append('name', name);
             formData.append('email', email);
@@ -778,6 +935,7 @@
             formData.append('aspiration', aspiration);
             formData.append('funFact', funFact);
             if (photoFile) formData.append('profileImage', photoFile);
+
             try {
                 const res = await fetch(`${API_BASE}/auth/register`, {
                     method: 'POST',
@@ -801,10 +959,12 @@
                 alert('Error: ' + err.message);
             }
         }
+
         async function editStudent(id) {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can edit');
             const student = allStudents.find(s => s.id === id);
             if (!student) return;
+
             const newName = prompt('New name', student.name);
             if (!newName) return;
             const newQuote = prompt('Quote', student.quote || '');
@@ -812,6 +972,7 @@
             const newHobby = prompt('Hobby', student.hobby || '');
             const newAspiration = prompt('Aspiration', student.aspiration || '');
             const newFunFact = prompt('Fun Fact', student.funFact || '');
+
             try {
                 await authFetch(`/profile/update/${id}`, {
                     method: 'PUT',
@@ -829,6 +990,7 @@
                 alert('Update failed: ' + err.message);
             }
         }
+
         async function updateStudentPhoto(id) {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can change photos');
             const input = document.createElement('input');
@@ -854,6 +1016,7 @@
             };
             input.click();
         }
+
         async function deleteStudent(id) {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete');
             if (!confirm('Delete this student?')) return;
@@ -864,15 +1027,20 @@
                 alert('Delete failed: ' + err.message);
             }
         }
+
         async function createPostFromForm() {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can create memories');
+
             const title = document.getElementById('postTitle').value.trim();
             const content = document.getElementById('postContent').value.trim();
             const imageFile = document.getElementById('postImage').files[0];
+
             if (!title) return alert('Title required');
+
             const formData = new FormData();
             formData.append('content', `${title}\n${content}`);
             if (imageFile) formData.append('image', imageFile);
+
             try {
                 const res = await fetch(`${API_BASE}/posts/create`, {
                     method: 'POST',
@@ -892,6 +1060,7 @@
                 alert('Error: ' + err.message);
             }
         }
+
         async function deleteMemory(id) {
             if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete memories');
             if (!confirm('Delete this memory?')) return;
@@ -905,11 +1074,16 @@
         }
 
         // ========== RENDERING FUNCTIONS ==========
+        // (Keep your original renderHome, renderStudents, renderMemories, etc. here)
+        // For brevity, I'm assuming you have them. If not, please copy them from your previous version.
+        // They are unchanged – they use allStudents and allMemories.
+
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
             const gradDate = new Date('2027-06-15');
             const daysLeft = Math.ceil((gradDate - new Date()) / (1000 * 60 * 60 * 24));
+
             document.getElementById('view-home').innerHTML = `
                 <section class="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 overflow-hidden">
                     <div class="absolute inset-0 z-0 pointer-events-none">
@@ -943,6 +1117,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="recentMemoriesHome"></div>
                 </section>
             `;
+
             document.getElementById('statsBento').innerHTML = `
                 <div class="bento-item bento-large">
                     <div><div class="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center mb-3"><i class="fas fa-graduation-cap text-xl text-[var(--primary)]"></i></div><h3 class="text-xl font-bold">Class Statistics</h3><p class="text-sm text-[var(--text-muted)]">Our journey by the numbers</p></div>
@@ -953,6 +1128,7 @@
                 <div class="bento-item bento-wide"><h3 class="font-bold mb-3">Quick Access</h3><div class="flex flex-wrap gap-2"><button onclick="showView('students')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-user mr-1"></i>Directory</button><button onclick="showView('events')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-calendar mr-1"></i>Events</button><button onclick="showView('memories')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-camera mr-1"></i>Gallery</button><button onclick="showView('quotes')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-comment mr-1"></i>Stories</button></div></div>
                 <div class="bento-item flex justify-between"><div><p class="text-sm text-[var(--text-muted)]">End of Year</p><p class="text-xl font-bold">June 2027</p><p class="text-xs text-[var(--primary)] mt-1">${daysLeft} days to go</p></div><div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white"><i class="fas fa-sun"></i></div></div>
             `;
+
             const recent = allMemories.slice(0, 3);
             document.getElementById('recentMemoriesHome').innerHTML = recent.length ? recent.map(p => `
                 <div class="group cursor-pointer" onclick="showView('memories')"><div class="overflow-hidden rounded-2xl relative"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="w-full h-48 object-cover transition-transform group-hover:scale-105"><div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4"><p class="text-white font-bold">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p></div></div></div>
@@ -976,6 +1152,7 @@
             `;
             renderStudentGrid();
         }
+
         function renderStudentGrid(filter = '') {
             const container = document.getElementById('studentGrid');
             if (!container) return;
@@ -1123,7 +1300,6 @@
             renderAdminPanel();
         }
 
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
             if (localStorage.getItem('theme') === 'light') {
                 document.documentElement.classList.remove('dark');
@@ -1131,7 +1307,6 @@
             }
             if (isSidebarCollapsed) toggleSidebar();
 
-            // Check for redirect result (in case popup was blocked)
             await handleRedirectResult();
 
             token = localStorage.getItem('token');
@@ -1151,10 +1326,8 @@
             }
         });
 
-        // Attach event listeners
         document.getElementById('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
 
-        // Expose functions to global scope for inline handlers
         window.deleteMemory = deleteMemory;
         window.editStudent = editStudent;
         window.deleteStudent = deleteStudent;
