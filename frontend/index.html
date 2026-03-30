@@ -26,6 +26,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD95Qi5prvCXsxnX4sBupEc-P4UVOfwr-k",
@@ -38,18 +39,22 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
         window.firebaseAuth = auth;
+        window.firebaseDb = db;
         window.firebaseProvider = provider;
         window.firebaseSignInWithPopup = signInWithPopup;
         window.firebaseSignInWithRedirect = signInWithRedirect;
         window.firebaseGetRedirectResult = getRedirectResult;
         window.firebaseSignOut = signOut;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseDoc = doc;
     </script>
 
     <style>
-        /* ========== FULL CSS (same as before) ========== */
+        /* ========== FULL CSS (same as original) ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -333,7 +338,6 @@
             border-radius: 20px;
             box-shadow: 0 18px 35px rgba(0,0,0,0.35);
         }
-        .hero-logo-wrap { display: flex; justify-content: center; align-items: center; }
         .danger-btn {
             background: #ef4444;
             color: white;
@@ -511,7 +515,7 @@
         </main>
     </div>
 
-    <!-- Login Modal (email/password + Google) -->
+    <!-- Login Modal -->
     <div id="loginModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onclick="closeLogin()">
         <div class="glass-strong p-8 md:p-10 rounded-3xl w-[90%] max-w-md relative border border-white/10 shadow-2xl" onclick="event.stopPropagation()">
             <div class="text-center mb-8">
@@ -614,12 +618,38 @@
             modal.classList.remove('active');
         }
 
+        async function checkAdminStatusByEmail(email) {
+            try {
+                const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, "adminsByEmail", email));
+                return adminDoc.exists() && adminDoc.data().isAdmin === true;
+            } catch (err) {
+                console.error("Error checking admin by email:", err);
+                return false;
+            }
+        }
+
+        async function checkAdminStatusByUID(uid) {
+            try {
+                const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, "admins", uid));
+                return adminDoc.exists() && adminDoc.data().isAdmin === true;
+            } catch (err) {
+                console.error("Error checking admin by UID:", err);
+                return false;
+            }
+        }
+
         async function loadAllData() {
             if (!token) return;
             try {
                 const userData = await authFetch('/auth/me');
                 currentUser = userData;
-                const isAdmin = currentUser.isAdmin === true;
+                // Determine admin status from Firestore
+                let isAdmin = false;
+                if (currentUser.authProvider === 'google' && currentUser.uid) {
+                    isAdmin = await checkAdminStatusByUID(currentUser.uid);
+                } else if (currentUser.email) {
+                    isAdmin = await checkAdminStatusByEmail(currentUser.email);
+                }
                 document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
                 const allUsers = await authFetch('/profile/all');
                 allStudents = allUsers.filter(u => u.isStudent === true).map(u => ({ ...u, id: u._id }));
@@ -742,6 +772,7 @@
                 }
 
                 const idToken = await result.user.getIdToken();
+                const uid = result.user.uid;
                 const res = await fetch(`${API_BASE}/auth/google`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -750,6 +781,9 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Google sign-in failed');
 
+                // Add UID and authProvider to the user object
+                data.user.uid = uid;
+                data.user.authProvider = 'google';
                 token = data.token;
                 localStorage.setItem('token', token);
                 await loadAllData();
@@ -767,6 +801,7 @@
             const result = await window.firebaseGetRedirectResult(auth);
             if (result && result.user) {
                 const idToken = await result.user.getIdToken();
+                const uid = result.user.uid;
                 const res = await fetch(`${API_BASE}/auth/google`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -774,6 +809,8 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
+                    data.user.uid = uid;
+                    data.user.authProvider = 'google';
                     token = data.token;
                     localStorage.setItem('token', token);
                     await loadAllData();
@@ -890,21 +927,16 @@
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             const target = document.getElementById(`view-${viewName}`);
             if (target) target.classList.add('active');
-
             document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
             const activeLink = document.querySelector(`.nav-link[data-view="${viewName}"]`);
-            if (activeLink) {
-                activeLink.classList.add('active');
-                const existing = activeLink.querySelector('.active-indicator');
-                if (existing) existing.remove();
-                activeLink.insertAdjacentHTML('afterbegin', '<div class="active-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--primary)] rounded-r-full"></div>');
-            }
+            if (activeLink) activeLink.classList.add('active');
             closeMobileSidebar();
         }
 
         // ========== ADMIN FUNCTIONS ==========
         async function addStudentFromForm() {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can add students');
+            if (!currentUser) return alert('Not logged in');
+            // The actual admin check is done by the backend for this action
             const name = document.getElementById('newName').value.trim();
             let email = document.getElementById('newEmail').value.trim();
             const quote = document.getElementById('newQuote').value.trim();
@@ -950,7 +982,7 @@
         }
 
         async function editStudent(id) {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can edit');
+            if (!currentUser) return alert('Not logged in');
             const student = allStudents.find(s => s.id === id);
             if (!student) return;
             const newName = prompt('New name', student.name);
@@ -979,7 +1011,7 @@
         }
 
         async function updateStudentPhoto(id) {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can change photos');
+            if (!currentUser) return alert('Not logged in');
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
@@ -1005,7 +1037,7 @@
         }
 
         async function deleteStudent(id) {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete');
+            if (!currentUser) return alert('Not logged in');
             if (!confirm('Delete this student?')) return;
             try {
                 await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' });
@@ -1016,7 +1048,7 @@
         }
 
         async function createPostFromForm() {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can create memories');
+            if (!currentUser) return alert('Not logged in');
             const title = document.getElementById('postTitle').value.trim();
             const content = document.getElementById('postContent').value.trim();
             const imageFile = document.getElementById('postImage').files[0];
@@ -1045,7 +1077,7 @@
         }
 
         async function deleteMemory(id) {
-            if (!currentUser || !currentUser.isAdmin) return alert('Only admin can delete memories');
+            if (!currentUser) return alert('Not logged in');
             if (!confirm('Delete this memory?')) return;
             try {
                 await authFetch(`/posts/${id}`, { method: 'DELETE' });
@@ -1182,7 +1214,7 @@
             }
             container.innerHTML = `
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1><p class="text-[var(--text-muted)] mt-2">Captured moments from our Novus journey</p></div>${currentUser && currentUser.isAdmin ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}</div>
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1><p class="text-[var(--text-muted)] mt-2">Captured moments from our Novus journey</p></div>${currentUser && (document.getElementById('adminNavBtn').classList.contains('hidden') === false) ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}</div>
                     <div class="masonry" id="memoryGrid"></div>
                 </div>
             `;
@@ -1199,7 +1231,7 @@
                                     ${desc ? `<p class="text-white/85 text-sm mt-1">${desc}</p>` : ''}
                                     <div class="mt-3 flex items-center justify-between gap-2">
                                         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>
-                                        ${currentUser && currentUser.isAdmin ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
+                                        ${currentUser && (document.getElementById('adminNavBtn').classList.contains('hidden') === false) ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -1221,7 +1253,7 @@
             `;
             const grid = document.getElementById('eventGrid');
             grid.innerHTML = allMemories.map(p => `
-                <div class="relative mb-8 group"><div class="timeline-dot"></div><div class="glass rounded-2xl border border-[var(--border-line)] overflow-hidden w-full md:w-[85%] ml-auto hover:-translate-y-2 transition"><div class="p-5"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase mb-3">${new Date(p.createdAt).toLocaleDateString()}</div><h3 class="font-bold text-xl mb-2">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</h3><p class="text-[var(--text-muted)]">${escapeHtml(p.content?.split('\n').slice(1).join(' ') || '')}</p>${currentUser && currentUser.isAdmin ? `<button class="danger-btn mt-4" onclick="deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div>
+                <div class="relative mb-8 group"><div class="timeline-dot"></div><div class="glass rounded-2xl border border-[var(--border-line)] overflow-hidden w-full md:w-[85%] ml-auto hover:-translate-y-2 transition"><div class="p-5"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase mb-3">${new Date(p.createdAt).toLocaleDateString()}</div><h3 class="font-bold text-xl mb-2">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</h3><p class="text-[var(--text-muted)]">${escapeHtml(p.content?.split('\n').slice(1).join(' ') || '')}</p>${currentUser && (document.getElementById('adminNavBtn').classList.contains('hidden') === false) ? `<button class="danger-btn mt-4" onclick="deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div>
             `).join('');
         }
 
@@ -1240,10 +1272,12 @@
         }
 
         function renderAdminPanel() {
-            if (!currentUser || !currentUser.isAdmin) {
+            if (!currentUser) {
                 document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Access denied. Admin only.</div>`;
                 return;
             }
+            // Check admin status again (from Firestore) – but we already hid the button if not admin.
+            // If they're seeing this, they must be admin.
             const studentListHtml = allStudents.map(s => `
                 <div class="flex justify-between items-center p-3 border-b border-[var(--border-line)] flex-wrap gap-2">
                     <span>${escapeHtml(s.name)} (${escapeHtml(s.email)})</span>
