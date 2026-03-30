@@ -49,7 +49,7 @@
     </script>
 
     <style>
-        /* ========== ALL YOUR ORIGINAL CSS (copy exactly as before) ========== */
+        /* ========== FULL CSS (keep exactly as in your original) ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -482,7 +482,6 @@
         <div class="px-4 pb-6 countdown-widget">
             <div class="glass-strong rounded-2xl p-4 text-center">
                 <p class="text-xs text-[var(--text-muted)] mb-1">11G • Class of 2026/27</p>
-                <div class="text-xl font-bold gradient-text">Rising Stars</div>
                 <div class="mt-2 text-xs text-[var(--text-muted)]">📘 Junior Yearbook</div>
             </div>
         </div>
@@ -1090,7 +1089,7 @@
             `;
             const grid = document.getElementById('storiesGrid');
             grid.innerHTML = allStudents.map(s => `
-                <div class="glass rounded-2xl p-6 cursor-pointer interactive-card" onclick="openStudentModal('${s.id}')"><i class="fas fa-quote-left text-3xl text-[var(--primary)]/30 mb-3"></i><p class="text-lg font-medium mb-4">"${escapeHtml(s.quote || 'No quote yet')}"</p><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white text-sm font-bold">${escapeHtml(s.name.split(' ').map(n => n[0]).join(''))}</div><div><p class="font-bold">${escapeHtml(s.name)}</p><p class="text-xs text-[var(--text-muted)]">✨ ${escapeHtml(s.aspiration || 'Dream big')}</p></div></div></div>
+                <div class="glass rounded-2xl p-6 cursor-pointer interactive-card" onclick="openStudentModal('${s.id}')"><i class="fas fa-quote-left text-3xl text-[var(--primary)]/30 mb-3"></i><p class="text-lg font-medium mb-4">"${escapeHtml(s.quote || 'No quote yet')}"</p><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white text-sm font-bold">${escapeHtml(s.name.split(' ').map(n => n[0]).join(''))}</div><div><p class="font-bold">${escapeHtml(s.name)}</p><p class="text-xs text-[var(--text-muted)]">${escapeHtml(s.aspiration || '')}</p></div></div></div>
             `).join('');
         }
 
