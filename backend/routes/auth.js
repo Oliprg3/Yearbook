@@ -149,6 +149,7 @@ router.post('/google', async (req, res) => {
         const payload = { user: { id: user.id, email: user.email, isAdmin: user.isAdmin } };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
+        // 🔥 IMPORTANT: Add uid and authProvider to the response
         res.json({
             token,
             user: {
@@ -157,6 +158,8 @@ router.post('/google', async (req, res) => {
                 email: user.email,
                 isAdmin: user.isAdmin,
                 profileImage: user.profileImage,
+                uid: uid,                      // <-- Firebase UID
+                authProvider: 'google'         // <-- indicates Google login
             },
         });
     } catch (err) {
