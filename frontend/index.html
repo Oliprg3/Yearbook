@@ -25,7 +25,7 @@
     <!-- Firebase SDK (client-side only) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -45,6 +45,7 @@
         window.firebaseAuth = auth;
         window.firebaseDb = db;
         window.firebaseProvider = provider;
+        window.firebaseSignInWithPopup = signInWithPopup;
         window.firebaseSignInWithRedirect = signInWithRedirect;
         window.firebaseGetRedirectResult = getRedirectResult;
         window.firebaseSignOut = signOut;
@@ -545,6 +546,7 @@
         let allStudents = [];
         let allMemories = [];
 
+        // ========== Helper Functions ==========
         function escapeHtml(str = '') {
             return String(str)
                 .replace(/&/g, '&amp;')
@@ -596,15 +598,10 @@
                 const userData = await authFetch('/auth/me');
                 currentUser = userData;
 
-                // Determine admin status
                 let isAdmin = false;
-
-                // 1. Try Firestore admin check (if we have UID)
                 if (currentUser.uid) {
                     isAdmin = await checkAdminStatusByUID(currentUser.uid);
                 }
-
-                // 2. Fallback to hardcoded admin email (so you can access admin even without Firestore)
                 if (!isAdmin && currentUser.email === 'adminof11g@gmail.com') {
                     isAdmin = true;
                     console.log('✅ Hardcoded admin email detected:', currentUser.email);
@@ -617,7 +614,7 @@
                 allMemories = await authFetch('/posts');
                 allMemories = allMemories.map(p => ({ ...p, id: p._id }));
                 renderAllViews();
-                // Update avatar
+
                 if (currentUser.profileImage) {
                     document.getElementById('headerAvatar').src = currentUser.profileImage;
                 } else {
@@ -629,41 +626,53 @@
             }
         }
 
-        // Google Sign-In (redirect flow)
+        // Google Sign-In with popup + redirect fallback
         async function handleGoogleSignIn() {
             const auth = window.firebaseAuth;
             const provider = window.firebaseProvider;
+            const statusMsg = document.getElementById('loginStatusMsg');
+            statusMsg.innerText = 'Signing in with Google...';
+
             try {
-                await window.firebaseSignInWithRedirect(auth, provider);
+                const result = await window.firebaseSignInWithPopup(auth, provider);
+                await completeGoogleSignIn(result.user);
             } catch (err) {
-                console.error('Redirect error:', err);
-                document.getElementById('loginStatusMsg').innerText = 'Sign-in failed. Please try again.';
+                console.warn('Popup failed, falling back to redirect:', err);
+                if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+                    statusMsg.innerText = 'Popup blocked. Redirecting to Google...';
+                    await window.firebaseSignInWithRedirect(auth, provider);
+                } else {
+                    statusMsg.innerText = 'Sign-in failed: ' + err.message;
+                }
             }
+        }
+
+        async function completeGoogleSignIn(user) {
+            const idToken = await user.getIdToken();
+            const uid = user.uid;
+            const res = await fetch(`${API_BASE}/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Google sign-in failed');
+
+            data.user.uid = uid;
+            data.user.authProvider = 'google';
+            token = data.token;
+            localStorage.setItem('token', token);
+            await loadAllData();
+            closeLogin();
+            showView('home');
+            statusMsg.innerText = '';
         }
 
         async function handleRedirectResult() {
             const auth = window.firebaseAuth;
             const result = await window.firebaseGetRedirectResult(auth);
             if (result && result.user) {
-                const idToken = await result.user.getIdToken();
-                const uid = result.user.uid;
-                const res = await fetch(`${API_BASE}/auth/google`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    data.user.uid = uid;
-                    data.user.authProvider = 'google';
-                    token = data.token;
-                    localStorage.setItem('token', token);
-                    await loadAllData();
-                    closeLogin();
-                    showView('home');
-                } else {
-                    document.getElementById('loginStatusMsg').innerText = 'Google sign-in failed: ' + data.error;
-                }
+                await completeGoogleSignIn(result.user);
             }
         }
 
@@ -683,8 +692,11 @@
         function openLogin() {
             document.getElementById('loginModal').style.display = 'flex';
         }
-        function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
+        function closeLogin() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
 
+        // Sidebar and theme
         let isSidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
         function toggleSidebar() {
             isSidebarCollapsed = !isSidebarCollapsed;
@@ -707,21 +719,14 @@
                 widget.style.display = 'block'; iconWidget.classList.add('hidden'); iconWidget.classList.remove('flex');
             }
         }
-
         function openMobileSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobileOverlay');
-            sidebar.classList.add('mobile-open');
-            overlay.classList.add('active');
+            document.getElementById('sidebar').classList.add('mobile-open');
+            document.getElementById('mobileOverlay').classList.add('active');
         }
-
         function closeMobileSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobileOverlay');
-            sidebar.classList.remove('mobile-open');
-            overlay.classList.remove('active');
+            document.getElementById('sidebar').classList.remove('mobile-open');
+            document.getElementById('mobileOverlay').classList.remove('active');
         }
-
         function toggleTheme() {
             const html = document.documentElement;
             const icon = document.getElementById('themeIcon');
@@ -735,7 +740,6 @@
                 localStorage.setItem('theme', 'dark');
             }
         }
-
         function showView(viewName) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             const target = document.getElementById(`view-${viewName}`);
@@ -746,7 +750,7 @@
             closeMobileSidebar();
         }
 
-        // Admin functions (unchanged, rely on backend isAdmin)
+        // ========== Admin Functions ==========
         async function addStudentFromForm() {
             if (!currentUser) return alert('Not logged in');
             const name = document.getElementById('newName').value.trim();
@@ -900,7 +904,7 @@
             }
         }
 
-        // ========== RENDERING FUNCTIONS (full, same as before) ==========
+        // ========== Rendering Functions ==========
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
