@@ -6,6 +6,7 @@
     <title>Novus | 11G Yearbook • Class of 2026/27</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="novus.jpg">
     <script src="https://unpkg.com/dexie@3.2.3/dist/dexie.js"></script>
 
     <!-- Firebase SDKs -->
@@ -39,6 +40,7 @@
     </script>
 
     <style>
+        /* All your existing CSS (same as before) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -530,20 +532,19 @@
         import { getAuth, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Local database with Dexie
-        const db = new Dexie("NovusYearbook");
-        db.version(1).stores({
+        // Setup local IndexedDB
+        const dbLocal = new Dexie("NovusYearbook");
+        dbLocal.version(1).stores({
             students: "id, name, email, quote, dream, hobby, aspiration, funFact, profileImage, createdAt",
             memories: "id, title, content, image, createdAt"
         });
 
-        // Global state
         let currentUser = null;
         let isAdmin = false;
         let allStudents = [];
         let allMemories = [];
 
-        // Helper: convert file to base64
+        // Helper: file to base64
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -555,12 +556,12 @@
 
         // Load data from local DB
         async function loadAllData() {
-            allStudents = await db.students.toArray();
-            allMemories = await db.memories.toArray();
+            allStudents = await dbLocal.students.toArray();
+            allMemories = await dbLocal.memories.toArray();
             allMemories.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
         }
 
-        // Render all views
+        // Render everything
         async function renderAllViews() {
             await loadAllData();
             renderHome();
@@ -571,12 +572,13 @@
             if (isAdmin) renderAdminPanel();
         }
 
-        // --- Rendering functions (identical to your original design) ---
+        // --- Rendering functions (same as your original design) ---
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
             const gradDate = new Date('2027-06-15');
             const daysLeft = Math.ceil((gradDate - new Date()) / (1000 * 60 * 60 * 24));
+
             document.getElementById('view-home').innerHTML = `
                 <section class="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 overflow-hidden">
                     <div class="absolute inset-0 z-0 pointer-events-none">
@@ -610,6 +612,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="recentMemoriesHome"></div>
                 </section>
             `;
+
             document.getElementById('statsBento').innerHTML = `
                 <div class="bento-item bento-large">
                     <div><div class="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center mb-3"><i class="fas fa-graduation-cap text-xl text-[var(--primary)]"></i></div><h3 class="text-xl font-bold">Class Statistics</h3><p class="text-sm text-[var(--text-muted)]">Our journey by the numbers</p></div>
@@ -620,6 +623,7 @@
                 <div class="bento-item bento-wide"><h3 class="font-bold mb-3">Quick Access</h3><div class="flex flex-wrap gap-2"><button onclick="showView('students')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-user mr-1"></i>Directory</button><button onclick="showView('events')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-calendar mr-1"></i>Events</button><button onclick="showView('memories')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-camera mr-1"></i>Gallery</button><button onclick="showView('quotes')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-comment mr-1"></i>Stories</button></div></div>
                 <div class="bento-item flex justify-between"><div><p class="text-sm text-[var(--text-muted)]">End of Year</p><p class="text-xl font-bold">June 2027</p><p class="text-xs text-[var(--primary)] mt-1">${daysLeft} days to go</p></div><div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white"><i class="fas fa-sun"></i></div></div>
             `;
+
             const recent = allMemories.slice(0, 3);
             document.getElementById('recentMemoriesHome').innerHTML = recent.length ? recent.map(m => `
                 <div class="group cursor-pointer" onclick="showView('memories')"><div class="overflow-hidden rounded-2xl relative"><img src="${m.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="w-full h-48 object-cover transition-transform group-hover:scale-105"><div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4"><p class="text-white font-bold">${escapeHtml(m.title || m.content?.split('\n')[0] || 'Memory')}</p></div></div></div>
@@ -752,7 +756,7 @@
             `).join('');
         }
 
-        // Admin panel with add/delete/export/import
+        // Admin panel
         function renderAdminPanel() {
             const container = document.getElementById('view-admin');
             if (!isAdmin) {
@@ -784,7 +788,7 @@
             if (postImage) postImage.onchange = (e) => { document.getElementById('post-file-name').innerText = e.target.files[0] ? e.target.files[0].name : 'No file chosen'; };
         }
 
-        // Admin actions
+        // Admin actions (using local DB)
         async function addStudentFromForm() {
             if (!isAdmin) return alert('Only admin can add students');
             const name = document.getElementById('newName').value.trim();
@@ -792,9 +796,7 @@
             const email = document.getElementById('newEmail').value.trim() || `${name.replace(/\s/g, '').toLowerCase()}@novus.local`;
             const photoFile = document.getElementById('newPhoto').files[0];
             let profileImage = '';
-            if (photoFile) {
-                profileImage = await fileToBase64(photoFile);
-            }
+            if (photoFile) profileImage = await fileToBase64(photoFile);
             const newStudent = {
                 id: Date.now().toString(),
                 name,
@@ -807,7 +809,7 @@
                 profileImage,
                 createdAt: new Date().toISOString()
             };
-            await db.students.add(newStudent);
+            await dbLocal.students.add(newStudent);
             await loadAllData();
             renderAllViews();
             // Clear form
@@ -834,7 +836,7 @@
             const newHobby = prompt('Hobby', student.hobby || '');
             const newAspiration = prompt('Aspiration', student.aspiration || '');
             const newFunFact = prompt('Fun Fact', student.funFact || '');
-            await db.students.update(id, {
+            await dbLocal.students.update(id, {
                 name: newName,
                 quote: newQuote,
                 dream: newDream,
@@ -855,7 +857,7 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 const base64 = await fileToBase64(file);
-                await db.students.update(id, { profileImage: base64 });
+                await dbLocal.students.update(id, { profileImage: base64 });
                 await loadAllData();
                 renderAllViews();
                 alert('Photo updated');
@@ -866,7 +868,7 @@
         async function deleteStudent(id) {
             if (!isAdmin) return;
             if (!confirm('Delete this student?')) return;
-            await db.students.delete(id);
+            await dbLocal.students.delete(id);
             await loadAllData();
             renderAllViews();
         }
@@ -878,9 +880,7 @@
             if (!title) return alert('Title required');
             const imageFile = document.getElementById('postImage').files[0];
             let image = '';
-            if (imageFile) {
-                image = await fileToBase64(imageFile);
-            }
+            if (imageFile) image = await fileToBase64(imageFile);
             const newMemory = {
                 id: Date.now().toString(),
                 title,
@@ -888,7 +888,7 @@
                 image,
                 createdAt: new Date().toISOString()
             };
-            await db.memories.add(newMemory);
+            await dbLocal.memories.add(newMemory);
             await loadAllData();
             renderAllViews();
             document.getElementById('postTitle').value = '';
@@ -902,17 +902,13 @@
         async function deleteMemory(id) {
             if (!isAdmin) return;
             if (!confirm('Delete this memory?')) return;
-            await db.memories.delete(id);
+            await dbLocal.memories.delete(id);
             await loadAllData();
             renderAllViews();
         }
 
         async function exportData() {
-            const data = {
-                students: allStudents,
-                memories: allMemories,
-                exportDate: new Date().toISOString()
-            };
+            const data = { students: allStudents, memories: allMemories, exportDate: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -933,13 +929,13 @@
                 const text = await file.text();
                 try {
                     const data = JSON.parse(text);
-                    if (data.students && Array.isArray(data.students)) {
-                        await db.students.clear();
-                        await db.students.bulkAdd(data.students);
+                    if (data.students) {
+                        await dbLocal.students.clear();
+                        await dbLocal.students.bulkAdd(data.students);
                     }
-                    if (data.memories && Array.isArray(data.memories)) {
-                        await db.memories.clear();
-                        await db.memories.bulkAdd(data.memories);
+                    if (data.memories) {
+                        await dbLocal.memories.clear();
+                        await dbLocal.memories.bulkAdd(data.memories);
                     }
                     await loadAllData();
                     renderAllViews();
@@ -1002,14 +998,15 @@
         function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
         function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
 
-        // Firebase Auth
+        // Firebase Auth handlers
         async function handleGoogleSignIn() {
+            const auth = getAuth();
             try {
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
                 currentUser = { uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL };
                 document.getElementById('headerAvatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=8b5cf6&color=fff`;
-                // Check admin status
+                // Check admin
                 const adminDoc = await getDoc(doc(db, "admins", user.email));
                 isAdmin = adminDoc.exists() && adminDoc.data().isAdmin === true;
                 document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
@@ -1022,6 +1019,7 @@
             }
         }
         async function handleSignOut() {
+            const auth = getAuth();
             await signOut(auth);
             currentUser = null;
             isAdmin = false;
@@ -1031,11 +1029,10 @@
         }
 
         // Auth state listener
-        onAuthStateChanged(auth, async (user) => {
+        onAuthStateChanged(getAuth(), async (user) => {
             if (user) {
                 currentUser = { uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL };
                 document.getElementById('headerAvatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=8b5cf6&color=fff`;
-                // Check admin status
                 const adminDoc = await getDoc(doc(db, "admins", user.email));
                 isAdmin = adminDoc.exists() && adminDoc.data().isAdmin === true;
                 document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
@@ -1051,6 +1048,7 @@
             }
         });
 
+        // Attach global functions
         document.getElementById('googleSignInBtn').onclick = handleGoogleSignIn;
         window.toggleSidebar = toggleSidebar;
         window.openMobileSidebar = openMobileSidebar;
