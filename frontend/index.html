@@ -637,36 +637,56 @@
                 return false;
             }
         }
+    async function loadAllData() {
+      if (!token) return;
 
-        async function loadAllData() {
-            if (!token) return;
-            try {
-                const userData = await authFetch('/auth/me');
-                currentUser = userData;
-                // Determine admin status from Firestore
-                let isAdmin = false;
-                if (currentUser.authProvider === 'google' && currentUser.uid) {
-                    isAdmin = await checkAdminStatusByUID(currentUser.uid);
-                } else if (currentUser.email) {
-                    isAdmin = await checkAdminStatusByEmail(currentUser.email);
-                }
-                document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
-                const allUsers = await authFetch('/profile/all');
-                allStudents = allUsers.filter(u => u.isStudent === true).map(u => ({ ...u, id: u._id }));
-                allMemories = await authFetch('/posts');
-                allMemories = allMemories.map(p => ({ ...p, id: p._id }));
-                renderAllViews();
-                // Update avatar
-                if (currentUser.profileImage) {
-                    document.getElementById('headerAvatar').src = currentUser.profileImage;
-                } else {
-                    document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=8b5cf6&color=fff`;
-                }
-            } catch (err) {
-                console.error('Failed to load data:', err);
-                alert('Failed to load data. Please check your connection.\n' + err.message);
-            }
-        }
+      try {
+        const userData = await authFetch('/auth/me');
+        currentUser = userData;
+
+    // Check admin status, but do not let this block the rest of the app
+        let isAdmin = false;
+        try {
+          if (currentUser?.uid) {
+            isAdmin = await checkAdminStatusByUID(currentUser.uid);
+           } else if (currentUser?.email) {
+            isAdmin = await checkAdminStatusByEmail(currentUser.email);
+      }
+        } catch (adminErr) {
+          console.warn('Admin check failed:', adminErr);
+          isAdmin = false;
+    }
+
+    const adminNavBtn = document.getElementById('adminNavBtn');
+    if (adminNavBtn) {
+      adminNavBtn.classList.toggle('hidden', !isAdmin);
+    }
+
+    const [allUsers, allPosts] = await Promise.all([
+      authFetch('/profile/all'),
+      authFetch('/posts')
+    ]);
+
+    allStudents = (allUsers || [])
+      .filter(u => u?.isStudent === true)
+      .map(u => ({ ...u, id: u._id }));
+
+    allMemories = (allPosts || [])
+      .map(p => ({ ...p, id: p._id }));
+
+    renderAllViews();
+
+    const avatar = document.getElementById('headerAvatar');
+    if (avatar) {
+      avatar.src = currentUser?.profileImage
+        ? currentUser.profileImage
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'User')}&background=8b5cf6&color=fff`;
+    }
+  } catch (err) {
+    console.error('Failed to load data:', err);
+    alert('Failed to load data. Please check your connection.\n' + err.message);
+  }
+}
 
         function setButtonLoading(btn, isLoading, originalText) {
             if (isLoading) {
@@ -751,51 +771,20 @@
             }
         }
 
-        async function handleGoogleSignIn() {
-            const auth = window.firebaseAuth;
-            const provider = window.firebaseProvider;
-            const statusMsg = document.getElementById('loginStatusMsg');
-            statusMsg.innerText = 'Signing in with Google...';
-
-            try {
-                let result;
-                try {
-                    result = await window.firebaseSignInWithPopup(auth, provider);
-                } catch (popupErr) {
-                    if (popupErr.code === 'auth/popup-blocked') {
-                        statusMsg.innerText = 'Popup blocked. Redirecting to Google...';
-                        await window.firebaseSignInWithRedirect(auth, provider);
-                        return;
-                    } else {
-                        throw popupErr;
-                    }
-                }
-
-                const idToken = await result.user.getIdToken();
-                const uid = result.user.uid;
-                const res = await fetch(`${API_BASE}/auth/google`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idToken })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Google sign-in failed');
-
-                // Add UID and authProvider to the user object
-                data.user.uid = uid;
-                data.user.authProvider = 'google';
-                token = data.token;
-                localStorage.setItem('token', token);
-                await loadAllData();
-                closeLogin();
-                showView('home');
-                statusMsg.innerText = '';
-            } catch (err) {
-                console.error(err);
-                statusMsg.innerText = 'Google sign-in failed: ' + err.message;
-            }
-        }
-
+     async function handleGoogleSignIn() {
+        const auth = window.firebaseAuth;
+        const provider = window.firebaseProvider;
+        const statusMsg = document.getElementById('loginStatusMsg');
+     statusMsg.innerText = 'Redirecting to Google...';
+     try {
+        // Use redirect instead of popup
+        await window.firebaseSignInWithRedirect(auth, provider);
+        // The page will redirect to Google, then come back
+    } catch (err) {
+        console.error(err);
+        statusMsg.innerText = 'Sign-in failed: ' + err.message;
+    }
+}
         async function handleRedirectResult() {
             const auth = window.firebaseAuth;
             const result = await window.firebaseGetRedirectResult(auth);
