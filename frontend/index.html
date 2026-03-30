@@ -25,7 +25,7 @@
     <!-- Firebase SDK (client-side only) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -45,7 +45,6 @@
         window.firebaseAuth = auth;
         window.firebaseDb = db;
         window.firebaseProvider = provider;
-        window.firebaseSignInWithPopup = signInWithPopup;
         window.firebaseSignInWithRedirect = signInWithRedirect;
         window.firebaseGetRedirectResult = getRedirectResult;
         window.firebaseSignOut = signOut;
@@ -54,7 +53,7 @@
     </script>
 
     <style>
-        /* ========== FULL CSS (same as original) ========== */
+        /* ========== FULL CSS ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -515,49 +514,12 @@
         </main>
     </div>
 
-    <!-- Login Modal -->
+    <!-- Login Modal – only Google button -->
     <div id="loginModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onclick="closeLogin()">
-        <div class="glass-strong p-8 md:p-10 rounded-3xl w-[90%] max-w-md relative border border-white/10 shadow-2xl" onclick="event.stopPropagation()">
-            <div class="text-center mb-8">
-                <img src="novus.jpg" alt="Novus logo" class="login-logo mx-auto mb-4">
-                <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to Novus</h2>
-                <p class="text-[var(--text-muted)] text-sm">Sign in to explore the yearbook</p>
-            </div>
-            <div class="flex gap-2 mb-6 border-b border-white/10">
-                <button id="loginTabBtn" class="flex-1 py-2 text-white font-semibold border-b-2 border-primary">Sign In</button>
-                <button id="signupTabBtn" class="flex-1 py-2 text-[var(--text-muted)] font-semibold">Sign Up</button>
-            </div>
-            <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
-                <div class="relative">
-                    <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
-                    <input type="email" id="loginEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
-                </div>
-                <div class="relative">
-                    <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
-                    <input type="password" id="loginPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
-                </div>
-                <button type="submit" id="loginSubmitBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold flex items-center justify-center">Sign In</button>
-            </form>
-            <form id="signupForm" style="display: none;" onsubmit="event.preventDefault(); handleSignup();" class="space-y-4">
-                <div class="relative">
-                    <i class="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
-                    <input type="text" id="signupName" placeholder="Full Name" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
-                </div>
-                <div class="relative">
-                    <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
-                    <input type="email" id="signupEmail" placeholder="Email" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
-                </div>
-                <div class="relative">
-                    <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i>
-                    <input type="password" id="signupPassword" placeholder="Password" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
-                </div>
-                <button type="submit" id="signupSubmitBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold flex items-center justify-center">Create Account</button>
-                <p class="text-center text-sm text-[var(--text-muted)]">Already have an account? <a href="#" id="switchToLogin" class="text-[var(--primary)] hover:underline">Sign In</a></p>
-            </form>
-            <div class="relative my-4">
-                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
-                <div class="relative flex justify-center text-xs uppercase"><span class="bg-[var(--surface-solid)] px-2 text-[var(--text-muted)]">Or continue with</span></div>
-            </div>
+        <div class="glass-strong p-8 md:p-10 rounded-3xl w-[90%] max-w-md text-center" onclick="event.stopPropagation()">
+            <img src="novus.jpg" alt="Novus logo" class="login-logo mx-auto mb-4">
+            <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to Novus</h2>
+            <p class="text-[var(--text-muted)] mb-6">Sign in with your Google account</p>
             <button id="googleSignInBtn" class="google-btn w-full flex items-center justify-center gap-3">
                 <svg width="20" height="20" viewBox="0 0 48 48">
                     <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
@@ -618,16 +580,6 @@
             modal.classList.remove('active');
         }
 
-        async function checkAdminStatusByEmail(email) {
-            try {
-                const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, "adminsByEmail", email));
-                return adminDoc.exists() && adminDoc.data().isAdmin === true;
-            } catch (err) {
-                console.error("Error checking admin by email:", err);
-                return false;
-            }
-        }
-
         async function checkAdminStatusByUID(uid) {
             try {
                 const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, "admins", uid));
@@ -637,154 +589,58 @@
                 return false;
             }
         }
-    async function loadAllData() {
-      if (!token) return;
 
-      try {
-        const userData = await authFetch('/auth/me');
-        currentUser = userData;
-
-    // Check admin status, but do not let this block the rest of the app
-        let isAdmin = false;
-        try {
-          if (currentUser?.uid) {
-            isAdmin = await checkAdminStatusByUID(currentUser.uid);
-           } else if (currentUser?.email) {
-            isAdmin = await checkAdminStatusByEmail(currentUser.email);
-      }
-        } catch (adminErr) {
-          console.warn('Admin check failed:', adminErr);
-          isAdmin = false;
-    }
-
-    const adminNavBtn = document.getElementById('adminNavBtn');
-    if (adminNavBtn) {
-      adminNavBtn.classList.toggle('hidden', !isAdmin);
-    }
-
-    const [allUsers, allPosts] = await Promise.all([
-      authFetch('/profile/all'),
-      authFetch('/posts')
-    ]);
-
-    allStudents = (allUsers || [])
-      .filter(u => u?.isStudent === true)
-      .map(u => ({ ...u, id: u._id }));
-
-    allMemories = (allPosts || [])
-      .map(p => ({ ...p, id: p._id }));
-
-    renderAllViews();
-
-    const avatar = document.getElementById('headerAvatar');
-    if (avatar) {
-      avatar.src = currentUser?.profileImage
-        ? currentUser.profileImage
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'User')}&background=8b5cf6&color=fff`;
-    }
-  } catch (err) {
-    console.error('Failed to load data:', err);
-    alert('Failed to load data. Please check your connection.\n' + err.message);
-  }
-}
-
-        function setButtonLoading(btn, isLoading, originalText) {
-            if (isLoading) {
-                btn.disabled = true;
-                btn.classList.add('btn-loading');
-                btn.innerHTML = '<span class="spinner"></span>' + originalText;
-            } else {
-                btn.disabled = false;
-                btn.classList.remove('btn-loading');
-                btn.innerHTML = originalText;
-            }
-        }
-
-        async function handleLogin() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            if (!email || !password) {
-                document.getElementById('loginStatusMsg').innerText = 'Please fill all fields';
-                return;
-            }
-
-            const submitBtn = document.getElementById('loginSubmitBtn');
-            const originalText = submitBtn.innerText;
-            setButtonLoading(submitBtn, true, originalText);
-            document.getElementById('loginStatusMsg').innerText = 'Connecting...';
-
+        async function loadAllData() {
+            if (!token) return;
             try {
-                const res = await fetch(`${API_BASE}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Login failed');
+                const userData = await authFetch('/auth/me');
+                currentUser = userData;
 
-                token = data.token;
-                localStorage.setItem('token', token);
-                await loadAllData();
-                closeLogin();
-                showView('home');
-                document.getElementById('loginStatusMsg').innerText = '';
+                // Determine admin status
+                let isAdmin = false;
+
+                // 1. Try Firestore admin check (if we have UID)
+                if (currentUser.uid) {
+                    isAdmin = await checkAdminStatusByUID(currentUser.uid);
+                }
+
+                // 2. Fallback to hardcoded admin email (so you can access admin even without Firestore)
+                if (!isAdmin && currentUser.email === 'adminof11g@gmail.com') {
+                    isAdmin = true;
+                    console.log('✅ Hardcoded admin email detected:', currentUser.email);
+                }
+
+                document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
+
+                const allUsers = await authFetch('/profile/all');
+                allStudents = allUsers.filter(u => u.isStudent === true).map(u => ({ ...u, id: u._id }));
+                allMemories = await authFetch('/posts');
+                allMemories = allMemories.map(p => ({ ...p, id: p._id }));
+                renderAllViews();
+                // Update avatar
+                if (currentUser.profileImage) {
+                    document.getElementById('headerAvatar').src = currentUser.profileImage;
+                } else {
+                    document.getElementById('headerAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=8b5cf6&color=fff`;
+                }
             } catch (err) {
-                document.getElementById('loginStatusMsg').innerText = 'Login failed: ' + err.message;
-            } finally {
-                setButtonLoading(submitBtn, false, originalText);
+                console.error('Failed to load data:', err);
+                alert('Failed to load data. Please check your connection.\n' + err.message);
             }
         }
 
-        async function handleSignup() {
-            const name = document.getElementById('signupName').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-            if (!name || !email || !password) {
-                document.getElementById('loginStatusMsg').innerText = 'Please fill all fields';
-                return;
-            }
-
-            const submitBtn = document.getElementById('signupSubmitBtn');
-            const originalText = submitBtn.innerText;
-            setButtonLoading(submitBtn, true, originalText);
-            document.getElementById('loginStatusMsg').innerText = 'Creating account...';
-
+        // Google Sign-In (redirect flow)
+        async function handleGoogleSignIn() {
+            const auth = window.firebaseAuth;
+            const provider = window.firebaseProvider;
             try {
-                const res = await fetch(`${API_BASE}/auth/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Signup failed');
-
-                token = data.token;
-                localStorage.setItem('token', token);
-                await loadAllData();
-                closeLogin();
-                showView('home');
-                document.getElementById('loginStatusMsg').innerText = '';
+                await window.firebaseSignInWithRedirect(auth, provider);
             } catch (err) {
-                document.getElementById('loginStatusMsg').innerText = 'Signup failed: ' + err.message;
-            } finally {
-                setButtonLoading(submitBtn, false, originalText);
+                console.error('Redirect error:', err);
+                document.getElementById('loginStatusMsg').innerText = 'Sign-in failed. Please try again.';
             }
         }
 
-     async function handleGoogleSignIn() {
-        const auth = window.firebaseAuth;
-        const provider = window.firebaseProvider;
-        const statusMsg = document.getElementById('loginStatusMsg');
-     statusMsg.innerText = 'Redirecting to Google...';
-     try {
-        // Use redirect instead of popup
-        await window.firebaseSignInWithRedirect(auth, provider);
-        // The page will redirect to Google, then come back
-    } catch (err) {
-        console.error(err);
-        statusMsg.innerText = 'Sign-in failed: ' + err.message;
-    }
-}
         async function handleRedirectResult() {
             const auth = window.firebaseAuth;
             const result = await window.firebaseGetRedirectResult(auth);
@@ -824,40 +680,8 @@
             renderAllViews();
         }
 
-        function initLoginModalTabs() {
-            const loginTab = document.getElementById('loginTabBtn');
-            const signupTab = document.getElementById('signupTabBtn');
-            const loginForm = document.getElementById('loginForm');
-            const signupForm = document.getElementById('signupForm');
-            if (!loginTab || !signupTab) return;
-            loginTab.addEventListener('click', () => {
-                loginTab.classList.add('border-b-2', 'border-primary', 'text-white');
-                signupTab.classList.remove('border-b-2', 'border-primary', 'text-white');
-                signupTab.classList.add('text-[var(--text-muted)]');
-                loginForm.style.display = 'block';
-                signupForm.style.display = 'none';
-                document.getElementById('loginStatusMsg').innerText = '';
-            });
-            signupTab.addEventListener('click', () => {
-                signupTab.classList.add('border-b-2', 'border-primary', 'text-white');
-                loginTab.classList.remove('border-b-2', 'border-primary', 'text-white');
-                loginTab.classList.add('text-[var(--text-muted)]');
-                signupForm.style.display = 'block';
-                loginForm.style.display = 'none';
-                document.getElementById('loginStatusMsg').innerText = '';
-            });
-            const switchToLogin = document.getElementById('switchToLogin');
-            if (switchToLogin) {
-                switchToLogin.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    loginTab.click();
-                });
-            }
-        }
-
         function openLogin() {
             document.getElementById('loginModal').style.display = 'flex';
-            initLoginModalTabs();
         }
         function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
 
@@ -922,10 +746,9 @@
             closeMobileSidebar();
         }
 
-        // ========== ADMIN FUNCTIONS ==========
+        // Admin functions (unchanged, rely on backend isAdmin)
         async function addStudentFromForm() {
             if (!currentUser) return alert('Not logged in');
-            // The actual admin check is done by the backend for this action
             const name = document.getElementById('newName').value.trim();
             let email = document.getElementById('newEmail').value.trim();
             const quote = document.getElementById('newQuote').value.trim();
@@ -1077,7 +900,7 @@
             }
         }
 
-        // ========== RENDERING FUNCTIONS ==========
+        // ========== RENDERING FUNCTIONS (full, same as before) ==========
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
@@ -1265,8 +1088,6 @@
                 document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Access denied. Admin only.</div>`;
                 return;
             }
-            // Check admin status again (from Firestore) – but we already hid the button if not admin.
-            // If they're seeing this, they must be admin.
             const studentListHtml = allStudents.map(s => `
                 <div class="flex justify-between items-center p-3 border-b border-[var(--border-line)] flex-wrap gap-2">
                     <span>${escapeHtml(s.name)} (${escapeHtml(s.email)})</span>
