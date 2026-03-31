@@ -621,15 +621,27 @@
             modal.classList.remove('active');
         }
 
+        // Helper to get current user's email from either backend or Firebase
+        function getCurrentUserEmail() {
+            if (currentUser && currentUser.email) return currentUser.email;
+            const firebaseUser = window.firebaseAuth.currentUser;
+            if (firebaseUser && firebaseUser.email) return firebaseUser.email;
+            return null;
+        }
+
+        function isAdmin() {
+            const email = getCurrentUserEmail();
+            return email && email.toLowerCase() === 'adminof11g@gmail.com';
+        }
+
         async function loadAllData() {
             if (!token) return;
             try {
                 const userData = await authFetch('/auth/me');
                 currentUser = userData;
 
-                // Admin detection: if email matches hardcoded admin email
-                const isAdmin = currentUser.email === 'adminof11g@gmail.com';
-                document.getElementById('adminNavBtn').classList.toggle('hidden', !isAdmin);
+                const admin = isAdmin();
+                document.getElementById('adminNavBtn').classList.toggle('hidden', !admin);
 
                 const allUsers = await authFetch('/profile/all');
                 allStudents = allUsers.filter(u => u.isStudent === true).map(u => ({ ...u, id: u._id }));
@@ -708,8 +720,9 @@
         function updateAvatarDropdown() {
             const dropdown = document.getElementById('avatarDropdown');
             const avatarImg = document.getElementById('headerAvatar');
+            const email = getCurrentUserEmail();
 
-            if (!currentUser) {
+            if (!email) {
                 avatarImg.src = 'https://ui-avatars.com/api/?name=User&background=8b5cf6&color=fff';
                 dropdown.innerHTML = `
                     <div class="user-info"><div class="user-name">Not signed in</div></div>
@@ -719,15 +732,14 @@
                 return;
             }
 
-            const displayName = currentUser.name || currentUser.email.split('@')[0];
-            const userEmail = currentUser.email;
-            const photoUrl = currentUser.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=8b5cf6&color=fff`;
+            const displayName = (currentUser && currentUser.name) || email.split('@')[0];
+            const photoUrl = (currentUser && currentUser.profileImage) || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=8b5cf6&color=fff`;
             avatarImg.src = photoUrl;
 
             dropdown.innerHTML = `
                 <div class="user-info">
                     <div class="user-name">${escapeHtml(displayName)}</div>
-                    <div class="user-email">${escapeHtml(userEmail)}</div>
+                    <div class="user-email">${escapeHtml(email)}</div>
                 </div>
                 <div class="dropdown-divider"></div>
                 <button onclick="handleSignOut()" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] text-red-500">Sign Out</button>
@@ -795,9 +807,9 @@
             closeMobileSidebar();
         }
 
-        // ========== Admin Functions (fully implemented) ==========
+        // ========== Admin Functions (using isAdmin()) ==========
         async function addStudentFromForm() {
-            if (!currentUser || currentUser.email !== 'adminof11g@gmail.com') return alert('Only admin can add students');
+            if (!isAdmin()) return alert('Only admin can add students');
 
             const name = document.getElementById('newName').value.trim();
             let email = document.getElementById('newEmail').value.trim();
@@ -832,7 +844,6 @@
                 if (!res.ok) throw new Error(data.error || 'Failed to add student');
                 alert('Student added');
                 await loadAllData();
-                // Clear form
                 document.getElementById('newName').value = '';
                 document.getElementById('newEmail').value = '';
                 document.getElementById('newQuote').value = '';
@@ -848,7 +859,7 @@
         }
 
         async function editStudent(id) {
-            if (!currentUser || currentUser.email !== 'adminof11g@gmail.com') return alert('Only admin can edit');
+            if (!isAdmin()) return alert('Only admin can edit');
             const student = allStudents.find(s => s.id === id);
             if (!student) return;
 
@@ -879,7 +890,7 @@
         }
 
         async function updateStudentPhoto(id) {
-            if (!currentUser || currentUser.email !== 'adminof11g@gmail.com') return alert('Only admin can change photos');
+            if (!isAdmin()) return alert('Only admin can change photos');
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
@@ -905,7 +916,7 @@
         }
 
         async function deleteStudent(id) {
-            if (!currentUser || currentUser.email !== 'adminof11g@gmail.com') return alert('Only admin can delete');
+            if (!isAdmin()) return alert('Only admin can delete');
             if (!confirm('Delete this student?')) return;
             try {
                 await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' });
@@ -916,7 +927,7 @@
         }
 
         async function createPostFromForm() {
-            if (!currentUser || currentUser.email !== 'adminof11g@gmail.com') return alert('Only admin can create memories');
+            if (!isAdmin()) return alert('Only admin can create memories');
 
             const title = document.getElementById('postTitle').value.trim();
             const content = document.getElementById('postContent').value.trim();
@@ -949,7 +960,7 @@
         }
 
         async function deleteMemory(id) {
-            if (!currentUser || currentUser.email !== 'adminof11g@gmail.com') return alert('Only admin can delete memories');
+            if (!isAdmin()) return alert('Only admin can delete memories');
             if (!confirm('Delete this memory?')) return;
             try {
                 await authFetch(`/posts/${id}`, { method: 'DELETE' });
@@ -960,7 +971,7 @@
             }
         }
 
-        // ========== Rendering Functions (complete) ==========
+        // ========== Rendering Functions ==========
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
@@ -1104,7 +1115,7 @@
             }
             container.innerHTML = `
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20">
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1><p class="text-[var(--text-muted)] mt-2">Captured moments from our Novus journey</p></div>${currentUser && currentUser.email === 'adminof11g@gmail.com' ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}</div>
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1><p class="text-[var(--text-muted)] mt-2">Captured moments from our Novus journey</p></div>${isAdmin() ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}</div>
                     <div class="masonry" id="memoryGrid"></div>
                 </div>
             `;
@@ -1121,7 +1132,7 @@
                                     ${desc ? `<p class="text-white/85 text-sm mt-1">${desc}</p>` : ''}
                                     <div class="mt-3 flex items-center justify-between gap-2">
                                         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>
-                                        ${currentUser && currentUser.email === 'adminof11g@gmail.com' ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
+                                        ${isAdmin() ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -1147,7 +1158,7 @@
             `;
             const grid = document.getElementById('eventGrid');
             grid.innerHTML = allMemories.map(p => `
-                <div class="relative mb-8 group"><div class="timeline-dot"></div><div class="glass rounded-2xl border border-[var(--border-line)] overflow-hidden w-full md:w-[85%] ml-auto hover:-translate-y-2 transition"><div class="p-5"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase mb-3">${new Date(p.createdAt).toLocaleDateString()}</div><h3 class="font-bold text-xl mb-2">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</h3><p class="text-[var(--text-muted)]">${escapeHtml(p.content?.split('\n').slice(1).join(' ') || '')}</p>${currentUser && currentUser.email === 'adminof11g@gmail.com' ? `<button class="danger-btn mt-4" onclick="deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div>
+                <div class="relative mb-8 group"><div class="timeline-dot"></div><div class="glass rounded-2xl border border-[var(--border-line)] overflow-hidden w-full md:w-[85%] ml-auto hover:-translate-y-2 transition"><div class="p-5"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase mb-3">${new Date(p.createdAt).toLocaleDateString()}</div><h3 class="font-bold text-xl mb-2">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</h3><p class="text-[var(--text-muted)]">${escapeHtml(p.content?.split('\n').slice(1).join(' ') || '')}</p>${isAdmin() ? `<button class="danger-btn mt-4" onclick="deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div>
             `).join('');
         }
 
@@ -1170,7 +1181,7 @@
         }
 
         function renderAdminPanel() {
-            if (!currentUser || currentUser.email !== 'adminof11g@gmail.com') {
+            if (!isAdmin()) {
                 document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Access denied. Admin only.</div>`;
                 return;
             }
