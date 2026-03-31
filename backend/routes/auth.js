@@ -186,7 +186,8 @@ router.post('/register', auth, (req, res, next) => {
 
         try {
             const requester = await User.findById(req.user.id);
-            if (!requester.isAdmin) {
+            // 🔥 TEMPORARY BYPASS: allow the specific admin email even if not marked as admin in DB
+            if (!requester.isAdmin && requester.email !== 'adminof11g@gmail.com') {
                 return res.status(403).json({ error: 'Only admin can create students' });
             }
 
