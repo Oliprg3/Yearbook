@@ -49,7 +49,7 @@
     </script>
 
     <style>
-        /* ========== FULL CSS (unchanged, same as original) ========== */
+        /* ========== FULL CSS (unchanged) ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -617,6 +617,40 @@
             return res.json();
         }
 
+        // ========== IMAGE COMPRESSION UTILITY ==========
+        function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth || height > maxHeight) {
+                            if (width > height) {
+                                height = (height * maxWidth) / width;
+                                width = maxWidth;
+                            } else {
+                                width = (width * maxHeight) / height;
+                                height = maxHeight;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                        resolve(compressedBase64);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
         function openImageZoom(imageUrl) {
             const modal = document.getElementById('imageZoomModal');
             const zoomImg = document.getElementById('zoomImage');
@@ -790,7 +824,7 @@
             closeMobileSidebar();
         }
 
-        // ==================== FIXED: UPDATE STUDENT PHOTO (Base64 JSON) ====================
+        // ==================== FIXED: UPDATE STUDENT PHOTO WITH COMPRESSION ====================
         async function updateStudentPhoto(id) {
             if (!isAdmin()) return alert('Only admin can change photos');
             const input = document.createElement('input');
@@ -803,35 +837,40 @@
                     alert('Please select an image file.');
                     return;
                 }
-                const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    const base64Image = ev.target.result; // includes data:image/...;base64,
-                    try {
-                        const response = await fetch(`${API_BASE}/profile/update/${id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-auth-token': token
-                            },
-                            body: JSON.stringify({ profileImage: base64Image })
-                        });
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            throw new Error(errorText || 'Upload failed');
-                        }
-                        alert('Photo updated successfully!');
-                        await loadAllData(); // refresh all data
-                    } catch (err) {
-                        console.error('Photo update error:', err);
-                        alert('Failed to update photo: ' + err.message);
+                // Show loading indicator
+                const btn = document.activeElement;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner"></span> Compressing...';
+                btn.disabled = true;
+                try {
+                    // Compress image to max 800x800, JPEG quality 0.7
+                    const compressedBase64 = await compressImage(file, 800, 800, 0.7);
+                    const response = await fetch(`${API_BASE}/profile/update/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-auth-token': token
+                        },
+                        body: JSON.stringify({ profileImage: compressedBase64 })
+                    });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(errorText || 'Upload failed');
                     }
-                };
-                reader.readAsDataURL(file);
+                    alert('Photo updated successfully!');
+                    await loadAllData();
+                } catch (err) {
+                    console.error('Photo update error:', err);
+                    alert('Failed to update photo: ' + err.message);
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
             };
             input.click();
         }
 
-        // ==================== ADMIN FUNCTIONS (unchanged but working) ====================
+        // ==================== ADD STUDENT WITH COMPRESSION (optional but safe) ====================
         async function addStudentFromForm() {
             if (!isAdmin()) return alert('Only admin can add students');
             const name = document.getElementById('newName').value.trim();
@@ -842,6 +881,7 @@
             const photoFile = document.getElementById('newPhoto').files[0];
             if (!name) return alert('Name is required');
             if (!email) email = `student-${Date.now()}@novus.local`;
+            
             const formData = new FormData();
             formData.append('name', name);
             formData.append('email', email);
@@ -851,7 +891,15 @@
             formData.append('hobby', interests);
             formData.append('aspiration', '');
             formData.append('funFact', '');
-            if (photoFile) formData.append('profileImage', photoFile);
+            
+            if (photoFile) {
+                // Compress image before adding to FormData
+                const compressedBase64 = await compressImage(photoFile, 800, 800, 0.7);
+                // Convert base64 to Blob to append as file (optional, but FormData with Blob works)
+                const blob = await (await fetch(compressedBase64)).blob();
+                formData.append('profileImage', blob, 'profile.jpg');
+            }
+            
             try {
                 const res = await fetch(`${API_BASE}/auth/register`, {
                     method: 'POST',
@@ -910,7 +958,7 @@
             }
         }
 
-        // ==================== CREATE MEMORY (works with FormData) ====================
+        // ==================== CREATE MEMORY (unchanged, works with FormData) ====================
         async function createPostFromForm() {
             if (!isAdmin()) return alert('Only admin can create memories');
             const title = document.getElementById('postTitle').value.trim();
@@ -919,7 +967,12 @@
             if (!title) return alert('Title required');
             const formData = new FormData();
             formData.append('content', `${title}\n${content}`);
-            if (imageFile) formData.append('image', imageFile);
+            if (imageFile) {
+                // Optionally compress memory images to avoid large payloads
+                const compressedBase64 = await compressImage(imageFile, 1200, 1200, 0.8);
+                const blob = await (await fetch(compressedBase64)).blob();
+                formData.append('image', blob, 'memory.jpg');
+            }
             try {
                 const res = await fetch(`${API_BASE}/posts/create`, {
                     method: 'POST',
