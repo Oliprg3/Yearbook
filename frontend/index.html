@@ -49,7 +49,7 @@
     </script>
 
     <style>
-        /* ========== FULL CSS ========== */
+        /* ========== FULL CSS (unchanged, same as original) ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -570,7 +570,12 @@
             <h2 class="text-3xl font-bold text-[var(--text-main)] mb-2">Welcome to Novus</h2>
             <p class="text-[var(--text-muted)] mb-6">Sign in with your Google account to explore the yearbook</p>
             <button id="googleSignInBtn" class="google-btn w-full flex items-center justify-center gap-3">
-                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" /><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" /><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" /><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" /></svg>
+                <svg width="20" height="20" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+                </svg>
                 Continue with Google
             </button>
             <div id="loginStatusMsg" class="text-center text-sm mt-4 text-yellow-300"></div>
@@ -583,61 +588,59 @@
 
     <script>
         const API_BASE = 'https://yearbook2.onrender.com/api';
+
         let token = localStorage.getItem('token');
         let currentUser = null;
         let allStudents = [];
         let allMemories = [];
 
         function escapeHtml(str = '') {
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         async function authFetch(endpoint, options = {}) {
-            const headers = { 'Content-Type': 'application/json', ...(token && { 'x-auth-token': token }), ...options.headers };
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(token && { 'x-auth-token': token }),
+                ...options.headers
+            };
             const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
-            if (!res.ok) { const err = await res.text(); throw new Error(err); }
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
+            }
             return res.json();
         }
 
-        function getCurrentUserEmail() { return currentUser?.email || window.firebaseAuth?.currentUser?.email || null; }
-        function isAdmin() { const email = getCurrentUserEmail(); return email && email.toLowerCase() === 'adminof11g@gmail.com'; }
-
-        // ==================== FIXED PHOTO UPLOAD (Base64 JSON) ====================
-        async function updateStudentPhoto(id) {
-            if (!isAdmin()) return alert('Only admin can change photos');
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (!file.type.startsWith('image/')) { alert('Please select an image file.'); return; }
-                const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    const base64Image = ev.target.result; // includes data:image/...;base64,
-                    try {
-                        const response = await fetch(`${API_BASE}/profile/update/${id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                            body: JSON.stringify({ profileImage: base64Image })
-                        });
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            throw new Error(errorText || 'Upload failed');
-                        }
-                        alert('Photo updated successfully!');
-                        await loadAllData(); // refresh everything
-                    } catch (err) {
-                        console.error('Photo update error:', err);
-                        alert('Failed to update photo: ' + err.message + '\n\nTry again or contact admin.');
-                    }
-                };
-                reader.readAsDataURL(file);
-            };
-            input.click();
+        function openImageZoom(imageUrl) {
+            const modal = document.getElementById('imageZoomModal');
+            const zoomImg = document.getElementById('zoomImage');
+            zoomImg.src = imageUrl;
+            modal.classList.add('active');
         }
 
-        // ==================== REST OF FUNCTIONS (unchanged but integrated) ====================
+        function closeImageZoom() {
+            const modal = document.getElementById('imageZoomModal');
+            modal.classList.remove('active');
+        }
+
+        function getCurrentUserEmail() {
+            if (currentUser && currentUser.email) return currentUser.email;
+            const firebaseUser = window.firebaseAuth.currentUser;
+            if (firebaseUser && firebaseUser.email) return firebaseUser.email;
+            return null;
+        }
+
+        function isAdmin() {
+            const email = getCurrentUserEmail();
+            return email && email.toLowerCase() === 'adminof11g@gmail.com';
+        }
+
         async function loadAllData() {
             if (!token) return;
             try {
@@ -651,199 +654,393 @@
                 allMemories = allMemories.map(p => ({ ...p, id: p._id }));
                 renderAllViews();
                 updateAvatarDropdown();
-            } catch (err) { console.error(err); alert('Failed to load data: ' + err.message); }
+            } catch (err) {
+                console.error('Failed to load data:', err);
+                alert('Failed to load data. Please check your connection.\n' + err.message);
+            }
         }
 
         async function handleGoogleSignIn() {
-            const auth = window.firebaseAuth, provider = window.firebaseProvider;
+            const auth = window.firebaseAuth;
+            const provider = window.firebaseProvider;
             const statusMsg = document.getElementById('loginStatusMsg');
-            statusMsg.innerText = 'Signing in...';
+            statusMsg.innerText = 'Signing in with Google...';
             try {
                 const result = await window.firebaseSignInWithPopup(auth, provider);
                 await completeGoogleSignIn(result.user);
             } catch (err) {
-                if (err.code === 'auth/popup-blocked') await window.firebaseSignInWithRedirect(auth, provider);
-                else statusMsg.innerText = 'Error: ' + err.message;
+                console.warn('Popup failed, falling back to redirect:', err);
+                if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+                    statusMsg.innerText = 'Popup blocked. Redirecting to Google...';
+                    await window.firebaseSignInWithRedirect(auth, provider);
+                } else {
+                    statusMsg.innerText = 'Sign-in failed: ' + err.message;
+                }
             }
         }
 
         async function completeGoogleSignIn(user) {
             const idToken = await user.getIdToken();
-            const res = await fetch(`${API_BASE}/auth/google`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken }) });
+            const res = await fetch(`${API_BASE}/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken })
+            });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-            token = data.token; localStorage.setItem('token', token);
-            await loadAllData(); closeLogin(); showView('home');
+            if (!res.ok) throw new Error(data.error || 'Google sign-in failed');
+            token = data.token;
+            localStorage.setItem('token', token);
+            await loadAllData();
+            closeLogin();
+            showView('home');
+            document.getElementById('loginStatusMsg').innerText = '';
         }
 
-        async function handleSignOut() { localStorage.removeItem('token'); token = null; currentUser = null; allStudents = []; allMemories = []; if(window.firebaseAuth) await window.firebaseSignOut(window.firebaseAuth); updateAvatarDropdown(); renderAllViews(); openLogin(); }
+        async function handleRedirectResult() {
+            const auth = window.firebaseAuth;
+            const result = await window.firebaseGetRedirectResult(auth);
+            if (result && result.user) {
+                await completeGoogleSignIn(result.user);
+            }
+        }
+
+        async function handleSignOut() {
+            localStorage.removeItem('token');
+            token = null;
+            currentUser = null;
+            allStudents = [];
+            allMemories = [];
+            if (window.firebaseAuth) {
+                await window.firebaseSignOut(window.firebaseAuth);
+            }
+            updateAvatarDropdown();
+            renderAllViews();
+            openLogin();
+        }
 
         function updateAvatarDropdown() {
-            const dropdown = document.getElementById('avatarDropdown'), avatarImg = document.getElementById('headerAvatar');
+            const dropdown = document.getElementById('avatarDropdown');
+            const avatarImg = document.getElementById('headerAvatar');
             const email = getCurrentUserEmail();
-            if (!email) { avatarImg.src = 'https://ui-avatars.com/api/?name=User&background=8b5cf6&color=fff'; dropdown.innerHTML = `<div class="user-info"><div class="user-name">Not signed in</div></div><div class="dropdown-divider"></div><button onclick="openLogin()">Sign In</button>`; return; }
-            const displayName = currentUser?.name || email.split('@')[0];
-            const photoUrl = currentUser?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=8b5cf6&color=fff`;
+            if (!email) {
+                avatarImg.src = 'https://ui-avatars.com/api/?name=User&background=8b5cf6&color=fff';
+                dropdown.innerHTML = `<div class="user-info"><div class="user-name">Not signed in</div></div><div class="dropdown-divider"></div><button onclick="openLogin()" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)]">Sign In</button>`;
+                return;
+            }
+            const displayName = (currentUser && currentUser.name) || email.split('@')[0];
+            const photoUrl = (currentUser && currentUser.profileImage) || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=8b5cf6&color=fff`;
             avatarImg.src = photoUrl;
-            dropdown.innerHTML = `<div class="user-info"><div class="user-name">${escapeHtml(displayName)}</div><div class="user-email">${escapeHtml(email)}</div></div><div class="dropdown-divider"></div><button onclick="handleSignOut()" class="text-red-500">Sign Out</button>`;
+            dropdown.innerHTML = `<div class="user-info"><div class="user-name">${escapeHtml(displayName)}</div><div class="user-email">${escapeHtml(email)}</div></div><div class="dropdown-divider"></div><button onclick="handleSignOut()" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-hover)] text-red-500">Sign Out</button>`;
         }
 
+        function toggleDropdown() { document.getElementById('avatarDropdown').classList.toggle('hidden'); }
+        document.addEventListener('click', function(event) {
+            const container = document.getElementById('avatarContainer');
+            const dropdown = document.getElementById('avatarDropdown');
+            if (!container.contains(event.target)) dropdown.classList.add('hidden');
+        });
+
+        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+        function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
+
+        let isSidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        function toggleSidebar() {
+            isSidebarCollapsed = !isSidebarCollapsed;
+            localStorage.setItem('sidebar-collapsed', isSidebarCollapsed);
+            const sidebar = document.getElementById('sidebar');
+            const main = document.getElementById('mainContent');
+            const icon = document.getElementById('toggleIcon');
+            const texts = document.querySelectorAll('.sidebar-text');
+            const widget = document.querySelector('.countdown-widget');
+            const iconWidget = document.querySelector('.countdown-icon');
+            if (isSidebarCollapsed) {
+                sidebar.classList.remove('sidebar-expanded'); sidebar.classList.add('sidebar-collapsed');
+                main.classList.add('collapsed'); icon.className = 'fas fa-chevron-right text-xs';
+                texts.forEach(el => el.style.display = 'none');
+                widget.style.display = 'none'; iconWidget.classList.remove('hidden'); iconWidget.classList.add('flex');
+            } else {
+                sidebar.classList.remove('sidebar-collapsed'); sidebar.classList.add('sidebar-expanded');
+                main.classList.remove('collapsed'); icon.className = 'fas fa-chevron-left text-xs';
+                texts.forEach(el => el.style.display = 'block');
+                widget.style.display = 'block'; iconWidget.classList.add('hidden'); iconWidget.classList.remove('flex');
+            }
+        }
+        function openMobileSidebar() { document.getElementById('sidebar').classList.add('mobile-open'); document.getElementById('mobileOverlay').classList.add('active'); }
+        function closeMobileSidebar() { document.getElementById('sidebar').classList.remove('mobile-open'); document.getElementById('mobileOverlay').classList.remove('active'); }
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fas fa-moon text-lg';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fas fa-sun text-lg';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        function showView(viewName) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            const target = document.getElementById(`view-${viewName}`);
+            if (target) target.classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            const activeLink = document.querySelector(`.nav-link[data-view="${viewName}"]`);
+            if (activeLink) activeLink.classList.add('active');
+            closeMobileSidebar();
+        }
+
+        // ==================== FIXED: UPDATE STUDENT PHOTO (Base64 JSON) ====================
+        async function updateStudentPhoto(id) {
+            if (!isAdmin()) return alert('Only admin can change photos');
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select an image file.');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    const base64Image = ev.target.result; // includes data:image/...;base64,
+                    try {
+                        const response = await fetch(`${API_BASE}/profile/update/${id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-auth-token': token
+                            },
+                            body: JSON.stringify({ profileImage: base64Image })
+                        });
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(errorText || 'Upload failed');
+                        }
+                        alert('Photo updated successfully!');
+                        await loadAllData(); // refresh all data
+                    } catch (err) {
+                        console.error('Photo update error:', err);
+                        alert('Failed to update photo: ' + err.message);
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        // ==================== ADMIN FUNCTIONS (unchanged but working) ====================
         async function addStudentFromForm() {
-            if (!isAdmin()) return alert('Admin only');
-            const name = document.getElementById('newName')?.value.trim();
-            const email = document.getElementById('newEmail')?.value.trim() || `student-${Date.now()}@novus.local`;
-            const quote = document.getElementById('newQuote')?.value.trim() || '';
-            const lifeGoal = document.getElementById('newLifeGoal')?.value.trim() || '';
-            const interests = document.getElementById('newInterests')?.value.trim() || '';
-            const photoFile = document.getElementById('newPhoto')?.files[0];
-            if (!name) return alert('Name required');
+            if (!isAdmin()) return alert('Only admin can add students');
+            const name = document.getElementById('newName').value.trim();
+            let email = document.getElementById('newEmail').value.trim();
+            const quote = document.getElementById('newQuote').value.trim();
+            const lifeGoal = document.getElementById('newLifeGoal').value.trim();
+            const interests = document.getElementById('newInterests').value.trim();
+            const photoFile = document.getElementById('newPhoto').files[0];
+            if (!name) return alert('Name is required');
+            if (!email) email = `student-${Date.now()}@novus.local`;
             const formData = new FormData();
-            formData.append('name', name); formData.append('email', email); formData.append('password', 'student123');
-            formData.append('quote', quote); formData.append('dream', lifeGoal); formData.append('hobby', interests);
+            formData.append('name', name);
+            formData.append('email', email);
+            formData.append('password', 'student123');
+            formData.append('quote', quote);
+            formData.append('dream', lifeGoal);
+            formData.append('hobby', interests);
+            formData.append('aspiration', '');
+            formData.append('funFact', '');
             if (photoFile) formData.append('profileImage', photoFile);
             try {
-                const res = await fetch(`${API_BASE}/auth/register`, { method: 'POST', headers: { 'x-auth-token': token }, body: formData });
-                if (!res.ok) throw new Error((await res.json()).error || 'Failed');
-                alert('Student added'); await loadAllData();
-                ['newName','newEmail','newQuote','newLifeGoal','newInterests','newPhoto'].forEach(id => { const el = document.getElementById(id); if(el && id!=='newPhoto') el.value = ''; });
-                if(document.getElementById('file-name')) document.getElementById('file-name').innerText = 'No file chosen';
-            } catch (err) { alert('Error: ' + err.message); }
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'x-auth-token': token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to add student');
+                alert('Student added');
+                await loadAllData();
+                document.getElementById('newName').value = '';
+                document.getElementById('newEmail').value = '';
+                document.getElementById('newQuote').value = '';
+                document.getElementById('newLifeGoal').value = '';
+                document.getElementById('newInterests').value = '';
+                document.getElementById('newPhoto').value = '';
+                document.getElementById('file-name').innerText = 'No file chosen';
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
 
         async function editStudent(id) {
-            if (!isAdmin()) return;
-            const s = allStudents.find(s => s.id === id);
-            if(!s) return;
-            const newName = prompt('New name', s.name);
-            if(!newName) return;
-            const newQuote = prompt('Quote', s.quote || '');
-            const newLifeGoal = prompt('Life Goal', s.dream || '');
-            const newInterests = prompt('Interests', s.hobby || '');
+            if (!isAdmin()) return alert('Only admin can edit');
+            const student = allStudents.find(s => s.id === id);
+            if (!student) return;
+            const newName = prompt('New name', student.name);
+            if (!newName) return;
+            const newQuote = prompt('Quote', student.quote || '');
+            const newLifeGoal = prompt('Life Goal', student.dream || '');
+            const newInterests = prompt('Interests', student.hobby || '');
             try {
-                await authFetch(`/profile/update/${id}`, { method: 'PUT', body: JSON.stringify({ name: newName, quote: newQuote, dream: newLifeGoal, hobby: newInterests }) });
+                await authFetch(`/profile/update/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        name: newName,
+                        quote: newQuote,
+                        dream: newLifeGoal,
+                        hobby: newInterests
+                    })
+                });
                 await loadAllData();
-            } catch (err) { alert('Update failed: ' + err.message); }
+            } catch (err) {
+                alert('Update failed: ' + err.message);
+            }
         }
 
         async function deleteStudent(id) {
-            if (!isAdmin() || !confirm('Delete this student?')) return;
-            try { await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' }); await loadAllData(); } 
-            catch (err) { alert('Delete failed: ' + err.message); }
+            if (!isAdmin()) return alert('Only admin can delete');
+            if (!confirm('Delete this student?')) return;
+            try {
+                await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' });
+                await loadAllData();
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+            }
         }
 
+        // ==================== CREATE MEMORY (works with FormData) ====================
         async function createPostFromForm() {
-            if (!isAdmin()) return alert('Admin only');
-            const title = document.getElementById('postTitle')?.value.trim();
-            const content = document.getElementById('postContent')?.value.trim();
-            const imageFile = document.getElementById('postImage')?.files[0];
+            if (!isAdmin()) return alert('Only admin can create memories');
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+            const imageFile = document.getElementById('postImage').files[0];
             if (!title) return alert('Title required');
             const formData = new FormData();
             formData.append('content', `${title}\n${content}`);
             if (imageFile) formData.append('image', imageFile);
             try {
-                const res = await fetch(`${API_BASE}/posts/create`, { method: 'POST', headers: { 'x-auth-token': token }, body: formData });
-                if (!res.ok) throw new Error((await res.json()).error);
-                alert('Memory added!'); await loadAllData(); showView('memories');
-                document.getElementById('postTitle').value = ''; document.getElementById('postContent').value = ''; document.getElementById('postImage').value = '';
-                if(document.getElementById('post-file-name')) document.getElementById('post-file-name').innerText = 'No file chosen';
-            } catch (err) { alert('Error: ' + err.message); }
+                const res = await fetch(`${API_BASE}/posts/create`, {
+                    method: 'POST',
+                    headers: { 'x-auth-token': token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to create memory');
+                alert('Memory added!');
+                await loadAllData();
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                document.getElementById('postImage').value = '';
+                document.getElementById('post-file-name').innerText = 'No file chosen';
+                showView('memories');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
 
         async function deleteMemory(id) {
-            if (!isAdmin() || !confirm('Delete memory?')) return;
-            try { await authFetch(`/posts/${id}`, { method: 'DELETE' }); await loadAllData(); showView('memories'); } 
-            catch (err) { alert('Delete failed: ' + err.message); }
+            if (!isAdmin()) return alert('Only admin can delete memories');
+            if (!confirm('Delete this memory?')) return;
+            try {
+                await authFetch(`/posts/${id}`, { method: 'DELETE' });
+                await loadAllData();
+                showView('memories');
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+            }
         }
 
-        // ==================== RENDER FUNCTIONS (abridged but complete) ====================
-        function renderHome() { /* identical to original logic, but safe */ 
-            const studentCount = allStudents.length, postCount = allMemories.length, daysLeft = Math.ceil((new Date('2027-06-15') - new Date())/(86400000));
-            document.getElementById('view-home').innerHTML = `<section class="relative min-h-[90vh] flex items-center justify-center px-4"><div class="text-center max-w-4xl"><div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-[var(--primary)]/20 text-[var(--primary)] text-sm font-bold mb-6">✨ 11G • Class of 2026/27</div><h1 class="kinetic-title gradient-text mb-6">Novus</h1><p class="text-[var(--text-muted)] text-lg max-w-2xl mx-auto mb-8">Celebrating our journey.</p>${!currentUser ? `<div class="glass p-6 max-w-md mx-auto"><button onclick="openLogin()" class="px-6 py-2 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white">Sign In</button></div>` : `<div class="flex gap-4 justify-center"><button onclick="showView('students')" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold">Meet the Class</button><button onclick="showView('memories')" class="px-6 py-3 rounded-2xl glass font-bold">Memories</button></div>`}</div></section>${currentUser ? `<section class="max-w-7xl mx-auto px-6 py-16"><div class="bento-grid" id="statsBento"></div></section><section class="max-w-7xl mx-auto px-6 py-16"><h2 class="text-2xl font-bold mb-6">Recent Moments</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="recentMemoriesHome"></div></section>` : ''}`;
+        // ==================== RENDERING FUNCTIONS (unchanged) ====================
+        function renderHome() {
+            const studentCount = allStudents.length;
+            const postCount = allMemories.length;
+            const gradDate = new Date('2027-06-15');
+            const daysLeft = Math.ceil((gradDate - new Date()) / (1000 * 60 * 60 * 24));
+            document.getElementById('view-home').innerHTML = `<section class="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 overflow-hidden"><div class="absolute inset-0 z-0 pointer-events-none"><div class="absolute top-1/4 left-1/4 w-72 md:w-96 h-72 md:h-96 bg-[var(--primary)]/20 rounded-full blur-3xl animate-pulse-glow"></div><div class="absolute bottom-1/4 right-1/4 w-72 md:w-96 h-72 md:h-96 bg-[var(--secondary)]/20 rounded-full blur-3xl animate-pulse-glow" style="animation-delay: 2s;"></div></div><div class="relative z-10 text-center max-w-4xl mx-auto px-4"><div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-[var(--primary)]/20 text-[var(--primary)] text-sm font-bold uppercase tracking-wider mb-6 md:mb-8 animate-fade-in-up"><span class="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse"></span> 11G • Class of 2026/27</div><h1 class="kinetic-title mb-4 md:mb-6 text-[var(--text-main)]"><span class="block gradient-text">Novus</span></h1><p class="text-[var(--text-muted)] text-base md:text-lg lg:text-xl font-medium max-w-2xl mx-auto mb-8 md:mb-12 leading-relaxed px-4 animate-fade-in-up">Celebrating the journey, dreams, and memories of our incredible 11G class.</p>${!currentUser ? `<div class="glass rounded-2xl p-6 max-w-md mx-auto animate-fade-in-up"><p class="text-lg font-semibold mb-3">Sign in to explore the yearbook</p><button onclick="openLogin()" class="px-6 py-2 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-medium">Sign In with Google</button></div>` : `<div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 animate-fade-in-up"><button onclick="showView('students')" class="glow-btn w-full sm:w-auto px-6 md:px-8 py-3.5 md:py-4 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold hover:shadow-lg"><i class="fas fa-users mr-2"></i> Meet the Class</button><button onclick="showView('memories')" class="w-full sm:w-auto px-6 md:px-8 py-3.5 md:py-4 rounded-2xl glass text-[var(--text-main)] font-bold hover:bg-[var(--surface-hover)] border border-[var(--border-line)]"><i class="fas fa-play mr-2"></i> View Memories</button></div>`}</div></section>${currentUser ? `<section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20"><div class="text-center mb-10 md:mb-12"><h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-[var(--text-main)]">Highlights</h2><p class="text-[var(--text-muted)]">Discover what makes our 11G class unique</p></div><div class="bento-grid" id="statsBento"></div></section><section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 md:py-20"><div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8 md:mb-12"><div><h2 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 text-[var(--text-main)]">Recent Memories</h2><p class="text-[var(--text-muted)]">Latest moments captured</p></div><button onclick="showView('memories')" class="text-[var(--primary)] font-medium hover:underline">View All <i class="fas fa-arrow-right ml-2"></i></button></div><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="recentMemoriesHome"></div></section>` : ''}`;
             if(currentUser){
-                document.getElementById('statsBento').innerHTML = `<div class="bento-item bento-large"><h3 class="font-bold text-xl">Class Stats</h3><div class="grid grid-cols-2 gap-4 mt-4"><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${studentCount}</div><div>Students</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${postCount}</div><div>Memories</div></div></div></div><div class="bento-item bento-tall cursor-pointer" onclick="showView('memories')" style="background-image:url('https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'); background-size:cover;"><div class="h-full bg-black/50 flex items-end p-4 rounded-2xl"><p class="text-white font-bold">Latest Memory</p></div></div><div class="bento-item"><p class="text-sm">Graduation countdown: ${daysLeft} days</p></div>`;
-                const recent = allMemories.slice(0,3);
-                document.getElementById('recentMemoriesHome').innerHTML = recent.map(p => `<div class="glass rounded-2xl overflow-hidden"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="h-40 w-full object-cover"><div class="p-3">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</div></div>`).join('') || '<div class="col-span-full text-center">No memories yet</div>';
+                document.getElementById('statsBento').innerHTML = `<div class="bento-item bento-large"><div><div class="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center mb-3"><i class="fas fa-graduation-cap text-xl text-[var(--primary)]"></i></div><h3 class="text-xl font-bold">Class Statistics</h3><p class="text-sm text-[var(--text-muted)]">Our journey by the numbers</p></div><div class="grid grid-cols-2 gap-3 mt-4"><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${studentCount}</div><div class="text-xs">Students</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${postCount}</div><div class="text-xs">Memories</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">8</div><div class="text-xs">Clubs</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">12+</div><div class="text-xs">Events</div></div></div></div><div class="bento-item bento-tall cursor-pointer relative overflow-hidden" onclick="showView('memories')"><div class="absolute inset-0 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1523580494112-071d45815615?w=800');"></div><div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div><div class="relative h-full flex flex-col justify-end p-4"><span class="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold w-fit mb-2">Featured</span><h3 class="text-lg font-bold text-white">Recent Memory</h3><p class="text-white/80 text-sm">${escapeHtml(allMemories[0]?.content?.split('\n')[0] || 'Share your story')}</p></div></div><div class="bento-item bento-wide"><h3 class="font-bold mb-3">Quick Access</h3><div class="flex flex-wrap gap-2"><button onclick="showView('students')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-user mr-1"></i>Directory</button><button onclick="showView('events')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-calendar mr-1"></i>Events</button><button onclick="showView('memories')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-camera mr-1"></i>Gallery</button><button onclick="showView('quotes')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-comment mr-1"></i>Stories</button></div></div><div class="bento-item flex justify-between"><div><p class="text-sm text-[var(--text-muted)]">End of Year</p><p class="text-xl font-bold">June 2027</p><p class="text-xs text-[var(--primary)] mt-1">${daysLeft} days to go</p></div><div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white"><i class="fas fa-sun"></i></div></div>`;
+                const recent = allMemories.slice(0, 3);
+                document.getElementById('recentMemoriesHome').innerHTML = recent.length ? recent.map(p => `<div class="group cursor-pointer" onclick="showView('memories')"><div class="overflow-hidden rounded-2xl relative"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="w-full h-48 object-cover transition-transform group-hover:scale-105"><div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4"><p class="text-white font-bold">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p></div></div></div>`).join('') : `<div class="col-span-full text-center py-10 text-[var(--text-muted)]">No memories yet. Admin can add special moments.</div>`;
             }
         }
 
         function renderStudents() {
-            if(!currentUser){ document.getElementById('view-students').innerHTML = `<div class="text-center py-20">Sign in to view students</div>`; return; }
-            document.getElementById('view-students').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-10"><div class="flex justify-between items-center flex-wrap gap-4 mb-8"><h1 class="text-4xl font-bold gradient-text">Our Classmates</h1><input type="text" id="studentSearch" placeholder="Search..." oninput="filterStudents(this.value)" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-full px-5 py-2 w-64"></div><div class="students-grid" id="studentGrid"></div></div>`;
+            const container = document.getElementById('view-students');
+            if (!currentUser) { container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Please sign in to view the student gallery.</div>`; return; }
+            if (allStudents.length === 0) { container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-10 text-center text-[var(--text-muted)]">No students added yet. Admin can add them.</div>`; return; }
+            container.innerHTML = `<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20"><div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">11G Classmates</span></h1><p class="text-[var(--text-muted)] mt-2">Meet the incredible Class of 2026/27</p></div><div class="relative w-full md:w-80"><i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--text-muted)]"></i><input type="text" id="studentSearch" placeholder="Search by name..." oninput="filterStudents(this.value)" class="w-full bg-[var(--surface)] border border-[var(--border-line)] rounded-full py-3 pl-12 pr-4 text-sm focus:border-[var(--primary)] focus:outline-none"></div></div><div class="students-grid" id="studentGrid"></div></div>`;
             renderStudentGrid();
         }
-        function renderStudentGrid(filter=''){ const container = document.getElementById('studentGrid'); if(!container) return; const filtered = allStudents.filter(s=>s.name.toLowerCase().includes(filter.toLowerCase())); container.innerHTML = filtered.map(s=>`<div class="student-card" onclick="openStudentModal('${s.id}')"><img src="${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-lg"><h3 class="font-bold text-xl mt-4">${escapeHtml(s.name)}</h3><p class="text-[var(--text-muted)] italic text-sm">"${escapeHtml(s.quote || '')}"</p></div>`).join(''); }
-        window.filterStudents = (q)=>renderStudentGrid(q);
 
-        function openStudentModal(id){
-            const s = allStudents.find(st=>st.id===id);
-            if(!s) return;
+        function renderStudentGrid(filter = '') {
+            const container = document.getElementById('studentGrid');
+            if (!container) return;
+            const filtered = allStudents.filter(s => s.name.toLowerCase().includes(filter.toLowerCase()));
+            container.innerHTML = filtered.map(s => `<div class="student-card cursor-pointer" onclick="openStudentModal('${s.id}')"><img src="${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-lg student-profile-img" onclick="event.stopPropagation(); openImageZoom('${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}')"><h3 class="font-bold text-xl text-[var(--text-main)] mt-4 text-center">${escapeHtml(s.name)}</h3><p class="text-[var(--text-muted)] text-sm mt-2 text-center italic">"${escapeHtml(s.quote || 'No quote yet')}"</p></div>`).join('');
+        }
+        window.filterStudents = (q) => renderStudentGrid(q);
+
+        function openStudentModal(id) {
+            const s = allStudents.find(st => st.id === id);
+            if (!s) return;
             const imgUrl = s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`;
-            const modalDiv = document.createElement('div'); modalDiv.id='studentModal'; modalDiv.className='profile-modal active'; modalDiv.onclick=()=>modalDiv.remove();
-            modalDiv.innerHTML = `<div class="profile-card" onclick="event.stopPropagation()"><div class="p-6 text-center"><button class="float-right text-xl" onclick="document.getElementById('studentModal').remove()">&times;</button><img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] mx-auto mb-4"><h2 class="text-2xl font-bold">${escapeHtml(s.name)}</h2><div class="glass rounded-xl p-4 mt-4 italic">"${escapeHtml(s.quote || 'No quote')}"</div><div class="mt-4 text-left"><p><strong>🌟 Life Goal:</strong> ${escapeHtml(s.dream || '—')}</p><p><strong>❤️ Interests:</strong> ${escapeHtml(s.hobby || '—')}</p></div></div></div>`;
-            document.body.appendChild(modalDiv);
+            const modalHtml = `<div id="studentModal" class="profile-modal active" onclick="closeStudentModal()"><div class="profile-card" onclick="event.stopPropagation()"><div class="relative p-6 md:p-8"><button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button><div class="flex flex-col items-center text-center"><img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')"><h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(s.name)}</h2><div class="mt-5 w-full space-y-4"><div class="glass rounded-2xl p-4"><i class="fas fa-quote-left text-[var(--primary)]/40 mr-2"></i><p class="text-[var(--text-main)] italic">"${escapeHtml(s.quote || 'No quote yet')}"</p></div><div class="grid grid-cols-1 gap-3"><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-star text-yellow-400 w-6"></i><span class="font-semibold">Life Goal:</span><span>${escapeHtml(s.dream || '—')}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-heart text-pink-400 w-6"></i><span class="font-semibold">Interests:</span><span>${escapeHtml(s.hobby || '—')}</span></div></div></div><div class="mt-6 flex gap-3"><span class="px-4 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-sm font-semibold">11G</span><span class="px-4 py-1 rounded-full bg-[var(--secondary)]/10 text-[var(--secondary)] text-sm font-semibold">Class of 2026/27</span></div></div></div></div></div>`;
+            const existing = document.getElementById('studentModal');
+            if (existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
-        window.closeStudentModal = ()=>document.getElementById('studentModal')?.remove();
+        window.closeStudentModal = () => { const modal = document.getElementById('studentModal'); if(modal) modal.remove(); };
 
-        function renderMemories(){
-            if(!currentUser){ document.getElementById('view-memories').innerHTML = `<div class="text-center py-20">Sign in to view memories</div>`; return; }
-            document.getElementById('view-memories').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-10"><div class="flex justify-between items-center mb-8"><h1 class="text-4xl font-bold gradient-text">Memories</h1>${isAdmin() ? '<button onclick="showView(\'admin\')" class="bg-primary text-white px-5 py-2 rounded-xl">+ Add</button>' : ''}</div><div class="masonry" id="memoryGrid"></div></div>`;
+        function renderMemories() {
+            const container = document.getElementById('view-memories');
+            if (!currentUser) { container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Please sign in to view memories.</div>`; return; }
+            if (allMemories.length === 0) { container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]"><i class="fas fa-camera text-4xl mb-3 opacity-50"></i><p>No memories yet. Admin can add special moments.</p></div>`; return; }
+            container.innerHTML = `<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20"><div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1><p class="text-[var(--text-muted)] mt-2">Captured moments from our Novus journey</p></div>${isAdmin() ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}</div><div class="masonry" id="memoryGrid"></div></div>`;
             const grid = document.getElementById('memoryGrid');
-            grid.innerHTML = allMemories.map(p => `<div class="masonry-item glass rounded-2xl overflow-hidden"><div class="memory-img-container cursor-pointer" onclick="openImageZoom('${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}')"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}" class="w-full"><div class="p-4"><h3 class="font-bold">${escapeHtml(p.content?.split('\n')[0])}</h3><p class="text-sm text-[var(--text-muted)]">${escapeHtml(p.content?.split('\n').slice(1).join(' '))}</p><div class="flex justify-between mt-3 text-xs">${new Date(p.createdAt).toLocaleDateString()}${isAdmin() ? `<button onclick="deleteMemory('${p.id}')" class="text-red-500"><i class="fas fa-trash"></i></button>` : ''}</div></div></div></div>`).join('');
+            grid.innerHTML = allMemories.map(p => `<div class="masonry-item memory-card group cursor-pointer"><div class="memory-img-container rounded-2xl overflow-hidden relative glass" onclick="openImageZoom('${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}')"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}" class="w-full object-cover" alt="${escapeHtml(p.content?.split('\n')[0] || 'Memory')}"><div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-100 flex flex-col justify-end p-4"><p class="text-white font-bold text-lg">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p>${p.content?.split('\n').slice(1).join(' ') ? `<p class="text-white/85 text-sm mt-1">${escapeHtml(p.content?.split('\n').slice(1).join(' '))}</p>` : ''}<div class="mt-3 flex items-center justify-between gap-2"><span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>${isAdmin() ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div></div>`).join('');
         }
 
-        function renderEvents(){
-            if(!currentUser){ document.getElementById('view-events').innerHTML = `<div class="text-center py-20">Sign in to view timeline</div>`; return; }
-            document.getElementById('view-events').innerHTML = `<div class="max-w-4xl mx-auto px-4 py-10"><h1 class="text-4xl font-bold gradient-text mb-8">Events Timeline</h1><div class="timeline-container" id="eventGrid"></div></div>`;
+        function renderEvents() { 
+            const container = document.getElementById('view-events');
+            if (!currentUser) { container.innerHTML = `<div class="max-w-4xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Please sign in to view events timeline.</div>`; return; }
+            if (allMemories.length === 0) { container.innerHTML = `<div class="max-w-4xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">No events yet. Create memories to see timeline.</div>`; return; }
+            container.innerHTML = `<div class="max-w-4xl mx-auto px-4 sm:px-6 py-10 pb-20"><div class="mb-12"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Special</span> <span class="gradient-text">Events</span></h1><p class="text-[var(--text-muted)] mt-2">Timeline of our Novus milestones</p></div><div class="relative timeline-container" id="eventGrid"></div></div>`;
             const grid = document.getElementById('eventGrid');
-            grid.innerHTML = allMemories.map(p => `<div class="relative mb-8"><div class="timeline-dot"></div><div class="glass rounded-2xl p-5 w-full md:w-4/5 ml-auto"><div class="text-xs text-primary mb-2">${new Date(p.createdAt).toLocaleDateString()}</div><h3 class="font-bold text-xl">${escapeHtml(p.content?.split('\n')[0])}</h3><p>${escapeHtml(p.content?.split('\n').slice(1).join(' '))}</p>${isAdmin() ? `<button onclick="deleteMemory('${p.id}')" class="danger-btn mt-3">Delete</button>` : ''}</div></div>`).join('');
+            grid.innerHTML = allMemories.map(p => `<div class="relative mb-8 group"><div class="timeline-dot"></div><div class="glass rounded-2xl border border-[var(--border-line)] overflow-hidden w-full md:w-[85%] ml-auto hover:-translate-y-2 transition"><div class="p-5"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-bold uppercase mb-3">${new Date(p.createdAt).toLocaleDateString()}</div><h3 class="font-bold text-xl mb-2">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</h3><p class="text-[var(--text-muted)]">${escapeHtml(p.content?.split('\n').slice(1).join(' ') || '')}</p>${isAdmin() ? `<button class="danger-btn mt-4" onclick="deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div>`).join('');
         }
 
-        function renderStories(){
-            if(!currentUser){ document.getElementById('view-quotes').innerHTML = `<div class="text-center py-20">Sign in to read stories</div>`; return; }
-            document.getElementById('view-quotes').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-10"><h1 class="text-4xl font-bold gradient-text mb-8 text-center">Student Stories</h1><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="storiesGrid"></div></div>`;
+        function renderStories() {
+            const container = document.getElementById('view-quotes');
+            if (!currentUser) { container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Please sign in to read student stories.</div>`; return; }
+            container.innerHTML = `<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20"><div class="text-center mb-12"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Student</span> <span class="gradient-text">Stories</span></h1><p class="text-[var(--text-muted)] max-w-2xl mx-auto">Dreams, quotes, and inspirations from the Class of 2026/27</p></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="storiesGrid"></div></div>`;
             const grid = document.getElementById('storiesGrid');
-            grid.innerHTML = allStudents.map(s => `<div class="glass rounded-2xl p-6 cursor-pointer interactive-card" onclick="openStudentModal('${s.id}')"><i class="fas fa-quote-left text-3xl text-primary/30 mb-3"></i><p class="italic">"${escapeHtml(s.quote || 'Dream big')}"</p><div class="mt-4 font-bold">— ${escapeHtml(s.name)}</div></div>`).join('');
+            grid.innerHTML = allStudents.map(s => `<div class="glass rounded-2xl p-6 cursor-pointer interactive-card" onclick="openStudentModal('${s.id}')"><i class="fas fa-quote-left text-3xl text-[var(--primary)]/30 mb-3"></i><p class="text-lg font-medium mb-4">"${escapeHtml(s.quote || 'No quote yet')}"</p><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white text-sm font-bold">${escapeHtml(s.name.split(' ').map(n => n[0]).join(''))}</div><div><p class="font-bold">${escapeHtml(s.name)}</p></div></div></div>`).join('');
         }
 
-        function renderAdminPanel(){
-            if(!isAdmin()){ document.getElementById('view-admin').innerHTML = `<div class="text-center py-20">Admin access only</div>`; return; }
-            const studentListHtml = allStudents.map(s => `<div class="flex justify-between items-center p-3 border-b flex-wrap gap-2"><span>${escapeHtml(s.name)}</span><div><button onclick="editStudent('${s.id}')" class="text-blue-400 mr-2"><i class="fas fa-edit"></i></button><button onclick="updateStudentPhoto('${s.id}')" class="text-green-400 mr-2"><i class="fas fa-camera"></i></button><button onclick="deleteStudent('${s.id}')" class="text-red-400"><i class="fas fa-trash"></i></button></div></div>`).join('');
-            document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-10"><h1 class="text-4xl font-bold gradient-text mb-6">Admin Panel</h1><div class="glass rounded-2xl p-6 mb-8"><h3 class="font-bold text-xl mb-4">➕ Add Student</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input id="newName" placeholder="Full name" class="bg-[var(--surface)] border rounded-lg px-4 py-2"><input id="newEmail" placeholder="Email (optional)" class="bg-[var(--surface)] border rounded-lg px-4 py-2"><textarea id="newQuote" placeholder="Quote" rows="2" class="bg-[var(--surface)] border rounded-lg px-4 py-2"></textarea><input id="newLifeGoal" placeholder="Life goal" class="bg-[var(--surface)] border rounded-lg px-4 py-2"><input id="newInterests" placeholder="Interests" class="bg-[var(--surface)] border rounded-lg px-4 py-2"><div><input type="file" id="newPhoto" accept="image/*" class="hidden"><button onclick="document.getElementById('newPhoto').click()" class="file-upload-btn">Upload Photo</button><span id="file-name" class="file-name">No file</span></div></div><button onclick="addStudentFromForm()" class="mt-4 px-6 py-2 bg-primary text-white rounded-xl">Create Student</button></div><div class="glass rounded-2xl p-6 mb-8"><h3 class="font-bold text-xl mb-4">📸 Create Memory</h3><input id="postTitle" placeholder="Title" class="w-full bg-[var(--surface)] border rounded-lg px-4 py-2 mb-3"><textarea id="postContent" placeholder="Description" rows="3" class="w-full bg-[var(--surface)] border rounded-lg px-4 py-2 mb-3"></textarea><input type="file" id="postImage" accept="image/*" class="hidden"><button onclick="document.getElementById('postImage').click()" class="file-upload-btn mr-2">Add Image</button><span id="post-file-name" class="file-name">No file</span><button onclick="createPostFromForm()" class="mt-3 px-6 py-2 bg-primary text-white rounded-xl">Post Memory</button></div><div class="glass rounded-2xl p-6"><h3 class="font-bold text-xl mb-4">📋 Manage Students</h3><div id="adminStudentList" class="max-h-96 overflow-y-auto">${studentListHtml}</div></div></div>`;
-            document.getElementById('newPhoto')?.addEventListener('change', (e) => { document.getElementById('file-name').innerText = e.target.files[0]?.name || 'No file'; });
-            document.getElementById('postImage')?.addEventListener('change', (e) => { document.getElementById('post-file-name').innerText = e.target.files[0]?.name || 'No file'; });
+        function renderAdminPanel() {
+            if (!isAdmin()) { document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]">Access denied. Admin only.</div>`; return; }
+            const studentListHtml = allStudents.map(s => `<div class="flex justify-between items-center p-3 border-b border-[var(--border-line)] flex-wrap gap-2"><span>${escapeHtml(s.name)}</span><div class="flex gap-2"><button onclick="editStudent('${s.id}')" class="text-blue-400" title="Edit"><i class="fas fa-edit"></i></button><button onclick="updateStudentPhoto('${s.id}')" class="text-green-400" title="Change Photo"><i class="fas fa-camera"></i></button><button onclick="deleteStudent('${s.id}')" class="text-red-400" title="Delete"><i class="fas fa-trash"></i></button></div></div>`).join('');
+            document.getElementById('view-admin').innerHTML = `<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20"><div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Admin</span> <span class="gradient-text">Panel</span></h1><p class="text-[var(--text-muted)] mt-2">Manage students and memories</p></div><div class="glass rounded-2xl p-6 mb-8 admin-panel-scroll"><h3 class="text-xl font-bold mb-4">Add New Student</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" id="newName" placeholder="Full Name" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="email" id="newEmail" placeholder="Email (optional)" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><textarea id="newQuote" placeholder="Quote / Motto" rows="2" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"></textarea><input type="text" id="newLifeGoal" placeholder="Life Goal" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><input type="text" id="newInterests" placeholder="Interests" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><div class="col-span-2"><label class="block text-sm text-[var(--text-muted)] mb-1">Profile Photo</label><input type="file" id="newPhoto" accept="image/*" class="hidden"><div class="flex items-center gap-2"><button onclick="document.getElementById('newPhoto').click()" class="file-upload-btn"><i class="fas fa-upload mr-1"></i> Choose Photo</button><span id="file-name" class="file-name">No file chosen</span></div></div></div><button onclick="addStudentFromForm()" class="mt-4 px-6 py-2 bg-[var(--primary)] text-white rounded-xl">Add Student</button></div><div class="glass rounded-2xl p-6 mb-8 admin-panel-scroll"><h3 class="text-xl font-bold mb-4">Create Memory Post</h3><div class="grid grid-cols-1 gap-4"><input type="text" id="postTitle" placeholder="Title" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"><textarea id="postContent" placeholder="Description" rows="3" class="bg-[var(--surface)] border border-[var(--border-line)] rounded-lg px-4 py-2"></textarea><div><input type="file" id="postImage" accept="image/*" class="hidden"><button onclick="document.getElementById('postImage').click()" class="file-upload-btn"><i class="fas fa-image mr-1"></i> Add Image</button><span id="post-file-name" class="file-name ml-2">No file chosen</span></div><button onclick="createPostFromForm()" class="mt-2 px-6 py-2 bg-[var(--primary)] text-white rounded-xl">Create Memory</button></div></div><div class="glass rounded-2xl p-6 admin-panel-scroll"><h3 class="text-xl font-bold mb-4">Manage Students</h3><div id="adminStudentList" class="space-y-2 max-h-96 overflow-y-auto">${studentListHtml}</div></div></div>`;
+            const newPhoto = document.getElementById('newPhoto'); const postImage = document.getElementById('postImage');
+            if (newPhoto) newPhoto.onchange = (e) => { document.getElementById('file-name').innerText = e.target.files[0] ? e.target.files[0].name : 'No file chosen'; };
+            if (postImage) postImage.onchange = (e) => { document.getElementById('post-file-name').innerText = e.target.files[0] ? e.target.files[0].name : 'No file chosen'; };
         }
 
-        function renderAllViews(){ renderHome(); renderStudents(); renderMemories(); renderEvents(); renderStories(); renderAdminPanel(); }
+        function renderAllViews() { renderHome(); renderStudents(); renderMemories(); renderEvents(); renderStories(); renderAdminPanel(); }
 
-        function toggleSidebar() { 
-            const collapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-            const sidebar = document.getElementById('sidebar'), main = document.getElementById('mainContent'), icon = document.getElementById('toggleIcon');
-            if (!collapsed) { sidebar.classList.replace('sidebar-expanded','sidebar-collapsed'); main.classList.add('collapsed'); icon.className='fas fa-chevron-right text-xs'; document.querySelectorAll('.sidebar-text').forEach(el=>el.style.display='none'); document.querySelector('.countdown-widget').style.display='none'; document.querySelector('.countdown-icon')?.classList.remove('hidden'); localStorage.setItem('sidebar-collapsed','true'); }
-            else { sidebar.classList.replace('sidebar-collapsed','sidebar-expanded'); main.classList.remove('collapsed'); icon.className='fas fa-chevron-left text-xs'; document.querySelectorAll('.sidebar-text').forEach(el=>el.style.display='block'); document.querySelector('.countdown-widget').style.display='block'; document.querySelector('.countdown-icon')?.classList.add('hidden'); localStorage.setItem('sidebar-collapsed','false'); }
-        }
-        function openMobileSidebar(){ document.getElementById('sidebar').classList.add('mobile-open'); document.getElementById('mobileOverlay').classList.add('active'); }
-        function closeMobileSidebar(){ document.getElementById('sidebar').classList.remove('mobile-open'); document.getElementById('mobileOverlay').classList.remove('active'); }
-        function toggleTheme(){ document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); document.getElementById('themeIcon').className = document.documentElement.classList.contains('dark') ? 'fas fa-sun text-lg' : 'fas fa-moon text-lg'; }
-        function showView(v){ document.querySelectorAll('.view-section').forEach(el=>el.classList.remove('active')); document.getElementById(`view-${v}`).classList.add('active'); document.querySelectorAll('.nav-link').forEach(link=>link.classList.remove('active')); document.querySelector(`.nav-link[data-view="${v}"]`)?.classList.add('active'); closeMobileSidebar(); }
-        function openLogin(){ document.getElementById('loginModal').style.display = 'flex'; }
-        function closeLogin(){ document.getElementById('loginModal').style.display = 'none'; }
-        function openImageZoom(url){ const modal = document.getElementById('imageZoomModal'); document.getElementById('zoomImage').src=url; modal.classList.add('active'); }
-        function closeImageZoom(){ document.getElementById('imageZoomModal').classList.remove('active'); }
-
-        document.getElementById('avatarContainer')?.addEventListener('click',(e)=>{ e.stopPropagation(); document.getElementById('avatarDropdown').classList.toggle('hidden'); });
-        document.addEventListener('click',()=>{ document.getElementById('avatarDropdown')?.classList.add('hidden'); });
-        document.getElementById('googleSignInBtn')?.addEventListener('click', handleGoogleSignIn);
-        window.updateStudentPhoto = updateStudentPhoto; window.editStudent = editStudent; window.deleteStudent = deleteStudent; window.deleteMemory = deleteMemory; window.addStudentFromForm = addStudentFromForm; window.createPostFromForm = createPostFromForm; window.openLogin = openLogin; window.showView = showView; window.toggleSidebar = toggleSidebar; window.openImageZoom = openImageZoom; window.closeImageZoom = closeImageZoom; window.handleSignOut = handleSignOut;
-
-        (async ()=>{
-            if(localStorage.getItem('theme')==='light') document.documentElement.classList.remove('dark');
-            const savedCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-            if(savedCollapsed) setTimeout(()=>toggleSidebar(),100);
-            await window.firebaseGetRedirectResult(window.firebaseAuth).then(async (result)=>{ if(result?.user) await completeGoogleSignIn(result.user); });
+        document.getElementById('avatarContainer').addEventListener('click', function(e) { e.stopPropagation(); toggleDropdown(); });
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (localStorage.getItem('theme') === 'light') { document.documentElement.classList.remove('dark'); document.getElementById('themeIcon').className = 'fas fa-moon text-lg'; }
+            if (isSidebarCollapsed) toggleSidebar();
+            await handleRedirectResult();
             token = localStorage.getItem('token');
-            if(token) { try { await loadAllData(); closeLogin(); showView('home'); } catch(e){ localStorage.removeItem('token'); token=null; openLogin(); } } 
-            else openLogin();
-        })();
+            if (token) { try { await loadAllData(); closeLogin(); showView('home'); } catch (err) { console.error(err); localStorage.removeItem('token'); token = null; openLogin(); } } 
+            else { openLogin(); }
+        });
+        document.getElementById('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
+        window.deleteMemory = deleteMemory; window.editStudent = editStudent; window.deleteStudent = deleteStudent; window.updateStudentPhoto = updateStudentPhoto; window.showView = showView; window.closeStudentModal = closeStudentModal; window.addStudentFromForm = addStudentFromForm; window.createPostFromForm = createPostFromForm; window.openImageZoom = openImageZoom; window.closeImageZoom = closeImageZoom; window.handleSignOut = handleSignOut; window.openLogin = openLogin;
     </script>
 </body>
 </html>
