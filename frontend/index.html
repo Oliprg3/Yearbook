@@ -49,7 +49,7 @@
     </script>
 
     <style>
-        /* ========== FULL CSS (unchanged except student modal arrows) ========== */
+        /* ========== FULL CSS (with fixed student modal arrows) ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -306,15 +306,15 @@
             overflow-y: auto;
             position: relative;
         }
-        /* Student modal navigation arrows */
+        /* Student modal navigation arrows - now positioned relative to the modal backdrop */
         .student-nav-arrow {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
             background: var(--surface-solid);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -322,19 +322,21 @@
             color: var(--text-main);
             border: 1px solid var(--border-line);
             transition: all 0.2s;
-            z-index: 10;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 210;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         .student-nav-arrow:hover {
             background: var(--primary);
             color: white;
             border-color: var(--primary);
+            transform: translateY(-50%) scale(1.05);
         }
-        .student-nav-arrow.prev { left: -20px; }
-        .student-nav-arrow.next { right: -20px; }
+        .student-nav-arrow.prev { left: max(20px, calc(50% - 300px)); }
+        .student-nav-arrow.next { right: max(20px, calc(50% - 300px)); }
         @media (max-width: 640px) {
-            .student-nav-arrow.prev { left: -10px; width: 32px; height: 32px; }
-            .student-nav-arrow.next { right: -10px; width: 32px; height: 32px; }
+            .student-nav-arrow { width: 36px; height: 36px; }
+            .student-nav-arrow.prev { left: 10px; }
+            .student-nav-arrow.next { right: 10px; }
         }
         /* Memory lightbox styles */
         .memory-lightbox {
@@ -829,7 +831,7 @@
             else if (e.key === 'Escape') closeMemoryLightbox();
         }
 
-        // ========== STUDENT PROFILE MODAL WITH NAVIGATION ==========
+        // ========== STUDENT PROFILE MODAL WITH VISIBLE ARROWS ==========
         function openStudentModal(id) {
             const index = allStudents.findIndex(s => s.id === id);
             if (index === -1) return;
@@ -846,10 +848,11 @@
             modalDiv.onclick = (e) => {
                 if (e.target === modalDiv) closeStudentModal();
             };
+            // Arrows are placed directly in the modal (outside the card) for visibility
             modalDiv.innerHTML = `
+                <div class="student-nav-arrow prev" onclick="navigateStudent(-1)"><i class="fas fa-chevron-left"></i></div>
+                <div class="student-nav-arrow next" onclick="navigateStudent(1)"><i class="fas fa-chevron-right"></i></div>
                 <div class="profile-card" onclick="event.stopPropagation()">
-                    <div class="student-nav-arrow prev" onclick="navigateStudent(-1)"><i class="fas fa-chevron-left"></i></div>
-                    <div class="student-nav-arrow next" onclick="navigateStudent(1)"><i class="fas fa-chevron-right"></i></div>
                     <div class="relative p-6 md:p-8">
                         <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
                         <div id="studentModalContent" class="flex flex-col items-center text-center">
@@ -1115,7 +1118,6 @@
                     if (!response.ok) throw new Error(await response.text());
                     alert('Photo updated successfully!');
                     await loadAllData();
-                    // If modal is open and showing this student, refresh it
                     if (currentStudentModal && allStudents[currentStudentIndex]?.id === id) {
                         updateStudentModalContent();
                     }
@@ -1213,11 +1215,9 @@
                 await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' });
                 await loadAllData();
                 if (currentStudentModal) {
-                    // If the deleted student was the current one, close modal
                     if (allStudents[currentStudentIndex]?.id === id) {
                         closeStudentModal();
                     } else if (allStudents.length > 0) {
-                        // Adjust index if needed
                         if (currentStudentIndex >= allStudents.length) currentStudentIndex = allStudents.length - 1;
                         updateStudentModalContent();
                     } else {
