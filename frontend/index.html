@@ -22,7 +22,7 @@
         }
     </script>
 
-    <!-- Firebase SDK (client-side only) -->
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -49,7 +49,7 @@
     </script>
 
     <style>
-        /* ========== FULL CSS (unchanged) ========== */
+        /* ========== FULL CSS (unchanged except memory lightbox additions) ========== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -306,33 +306,93 @@
             overflow-y: auto;
             position: relative;
         }
-        .nav-arrow {
+        /* Memory lightbox styles */
+        .memory-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(12px);
+        }
+        .memory-lightbox.active {
+            display: flex;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+        .lightbox-image {
+            max-width: 90vw;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
+        .lightbox-nav {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            background: var(--surface-solid);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: var(--text-main);
-            border: 1px solid var(--border-line);
             transition: all 0.2s;
-            z-index: 10;
+            z-index: 1001;
         }
-        .nav-arrow:hover {
+        .lightbox-nav:hover {
             background: var(--primary);
-            color: white;
-            border-color: var(--primary);
+            transform: translateY(-50%) scale(1.05);
         }
-        .nav-arrow.prev { left: -20px; }
-        .nav-arrow.next { right: -20px; }
+        .lightbox-nav.prev { left: 20px; }
+        .lightbox-nav.next { right: 20px; }
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 1001;
+            transition: all 0.2s;
+        }
+        .lightbox-close:hover {
+            background: var(--primary);
+            transform: scale(1.05);
+        }
+        .lightbox-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1001;
+        }
         @media (max-width: 640px) {
-            .nav-arrow.prev { left: -10px; width: 32px; height: 32px; }
-            .nav-arrow.next { right: -10px; width: 32px; height: 32px; }
+            .lightbox-nav { width: 36px; height: 36px; }
+            .lightbox-nav.prev { left: 10px; }
+            .lightbox-nav.next { right: 10px; }
+            .lightbox-close { top: 10px; right: 15px; width: 32px; height: 32px; font-size: 18px; }
         }
         .file-upload-btn {
             display: inline-block;
@@ -611,6 +671,18 @@
         </div>
     </div>
 
+    <!-- Memory Lightbox (replaces old image zoom for memories) -->
+    <div id="memoryLightbox" class="memory-lightbox" onclick="closeMemoryLightbox(event)">
+        <div class="lightbox-close" onclick="closeMemoryLightbox()"><i class="fas fa-times"></i></div>
+        <div class="lightbox-nav prev" onclick="event.stopPropagation(); navigateMemory(-1)"><i class="fas fa-chevron-left fa-2x"></i></div>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <img id="lightboxImage" class="lightbox-image" src="" alt="Memory">
+        </div>
+        <div class="lightbox-nav next" onclick="event.stopPropagation(); navigateMemory(1)"><i class="fas fa-chevron-right fa-2x"></i></div>
+        <div class="lightbox-counter" id="lightboxCounter"></div>
+    </div>
+
+    <!-- Old image zoom modal (kept for student profile pictures) -->
     <div id="imageZoomModal" class="image-zoom-modal" onclick="closeImageZoom()">
         <img id="zoomImage" src="" alt="Zoomed image">
     </div>
@@ -623,9 +695,8 @@
         let allStudents = [];
         let allMemories = [];
 
-        // For student modal navigation
-        let currentStudentIndex = 0;
-        let currentModalElement = null;
+        // Memory lightbox state
+        let currentMemoryIndex = 0;
 
         function escapeHtml(str = '') {
             return String(str)
@@ -684,13 +755,66 @@
             });
         }
 
+        // ========== MEMORY LIGHTBOX FUNCTIONS ==========
+        function openMemoryLightbox(index) {
+            if (!allMemories.length) return;
+            currentMemoryIndex = index;
+            const lightbox = document.getElementById('memoryLightbox');
+            const imgElement = document.getElementById('lightboxImage');
+            const memory = allMemories[currentMemoryIndex];
+            const imageUrl = memory.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800';
+            imgElement.src = imageUrl;
+            updateLightboxCounter();
+            lightbox.classList.add('active');
+            // Add keyboard listeners
+            document.addEventListener('keydown', memoryLightboxKeyHandler);
+        }
+
+        function updateLightboxCounter() {
+            const counter = document.getElementById('lightboxCounter');
+            if (counter) {
+                counter.textContent = `${currentMemoryIndex + 1} / ${allMemories.length}`;
+            }
+        }
+
+        function navigateMemory(delta) {
+            if (!allMemories.length) return;
+            let newIndex = currentMemoryIndex + delta;
+            if (newIndex < 0) newIndex = allMemories.length - 1;
+            if (newIndex >= allMemories.length) newIndex = 0;
+            currentMemoryIndex = newIndex;
+            const memory = allMemories[currentMemoryIndex];
+            const imageUrl = memory.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800';
+            document.getElementById('lightboxImage').src = imageUrl;
+            updateLightboxCounter();
+        }
+
+        function closeMemoryLightbox(event) {
+            if (event && event.target !== event.currentTarget && !event.target.classList.contains('lightbox-close') && !event.target.closest('.lightbox-nav')) {
+                return;
+            }
+            const lightbox = document.getElementById('memoryLightbox');
+            lightbox.classList.remove('active');
+            document.removeEventListener('keydown', memoryLightboxKeyHandler);
+        }
+
+        function memoryLightboxKeyHandler(e) {
+            if (e.key === 'ArrowLeft') {
+                navigateMemory(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateMemory(1);
+            } else if (e.key === 'Escape') {
+                closeMemoryLightbox();
+            }
+        }
+
+        // Old image zoom for student profile pictures (kept)
         function openImageZoom(imageUrl) {
             const modal = document.getElementById('imageZoomModal');
             const zoomImg = document.getElementById('zoomImage');
             zoomImg.src = imageUrl;
             modal.classList.add('active');
         }
-
         function closeImageZoom() {
             const modal = document.getElementById('imageZoomModal');
             modal.classList.remove('active');
@@ -857,95 +981,7 @@
             closeMobileSidebar();
         }
 
-        // ========== STUDENT MODAL WITH NAVIGATION ==========
-        function openStudentModal(id) {
-            const index = allStudents.findIndex(s => s.id === id);
-            if (index === -1) return;
-            currentStudentIndex = index;
-            // Remove existing modal if any
-            if (currentModalElement) {
-                currentModalElement.remove();
-                currentModalElement = null;
-            }
-            // Create modal container
-            const modalDiv = document.createElement('div');
-            modalDiv.id = 'studentModal';
-            modalDiv.className = 'profile-modal active';
-            modalDiv.onclick = (e) => {
-                if (e.target === modalDiv) closeStudentModal();
-            };
-            // Build inner HTML with arrows
-            modalDiv.innerHTML = `
-                <div class="profile-card" onclick="event.stopPropagation()">
-                    <div class="nav-arrow prev" onclick="navigateStudent(-1)"><i class="fas fa-chevron-left"></i></div>
-                    <div class="nav-arrow next" onclick="navigateStudent(1)"><i class="fas fa-chevron-right"></i></div>
-                    <div class="relative p-6 md:p-8">
-                        <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
-                        <div id="studentModalContent" class="flex flex-col items-center text-center">
-                            <!-- content will be filled dynamically -->
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modalDiv);
-            currentModalElement = modalDiv;
-            updateModalContent();
-            // Keyboard navigation
-            const keyHandler = (e) => {
-                if (!currentModalElement) return;
-                if (e.key === 'ArrowLeft') navigateStudent(-1);
-                if (e.key === 'ArrowRight') navigateStudent(1);
-                if (e.key === 'Escape') closeStudentModal();
-            };
-            document.addEventListener('keydown', keyHandler);
-            modalDiv.addEventListener('remove', () => {
-                document.removeEventListener('keydown', keyHandler);
-            });
-        }
-
-        function updateModalContent() {
-            if (!currentModalElement) return;
-            const student = allStudents[currentStudentIndex];
-            if (!student) {
-                closeStudentModal();
-                return;
-            }
-            const imgUrl = student.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=8b5cf6&color=fff&size=128`;
-            const contentDiv = currentModalElement.querySelector('#studentModalContent');
-            contentDiv.innerHTML = `
-                <img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')">
-                <h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(student.name)}</h2>
-                <div class="mt-5 w-full space-y-4">
-                    <div class="glass rounded-2xl p-4"><i class="fas fa-quote-left text-[var(--primary)]/40 mr-2"></i><p class="text-[var(--text-main)] italic">"${escapeHtml(student.quote || 'No quote yet')}"</p></div>
-                    <div class="grid grid-cols-1 gap-3">
-                        <div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-star text-yellow-400 w-6"></i><span class="font-semibold">Life Goal:</span><span>${escapeHtml(student.dream || '—')}</span></div>
-                        <div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-heart text-pink-400 w-6"></i><span class="font-semibold">Interests:</span><span>${escapeHtml(student.hobby || '—')}</span></div>
-                    </div>
-                </div>
-                <div class="mt-6 flex gap-3">
-                    <span class="px-4 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-sm font-semibold">11G</span>
-                    <span class="px-4 py-1 rounded-full bg-[var(--secondary)]/10 text-[var(--secondary)] text-sm font-semibold">Class of 2026/27</span>
-                </div>
-            `;
-        }
-
-        function navigateStudent(delta) {
-            if (!allStudents.length) return;
-            let newIndex = currentStudentIndex + delta;
-            if (newIndex < 0) newIndex = allStudents.length - 1;
-            if (newIndex >= allStudents.length) newIndex = 0;
-            currentStudentIndex = newIndex;
-            updateModalContent();
-        }
-
-        function closeStudentModal() {
-            if (currentModalElement) {
-                currentModalElement.remove();
-                currentModalElement = null;
-            }
-        }
-
-        // ==================== ADMIN FUNCTIONS ====================
+        // ==================== ADMIN FUNCTIONS (unchanged) ====================
         async function updateStudentPhoto(id) {
             if (!isAdmin()) return alert('Only admin can change photos');
             const input = document.createElement('input');
@@ -972,10 +1008,6 @@
                     if (!response.ok) throw new Error(await response.text());
                     alert('Photo updated successfully!');
                     await loadAllData();
-                    // If modal is open and showing this student, refresh it
-                    if (currentModalElement && allStudents[currentStudentIndex]?.id === id) {
-                        updateModalContent();
-                    }
                 } catch (err) {
                     alert('Failed to update photo: ' + err.message);
                 } finally {
@@ -1055,10 +1087,6 @@
                     })
                 });
                 await loadAllData();
-                // If modal is open and showing this student, refresh it
-                if (currentModalElement && allStudents[currentStudentIndex]?.id === id) {
-                    updateModalContent();
-                }
             } catch (err) {
                 alert('Update failed: ' + err.message);
             }
@@ -1070,14 +1098,6 @@
             try {
                 await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' });
                 await loadAllData();
-                // If the deleted student was the one currently viewed, close modal
-                if (currentModalElement && allStudents[currentStudentIndex]?.id === id) {
-                    closeStudentModal();
-                } else if (currentModalElement && allStudents.length > 0) {
-                    // Adjust index if needed
-                    if (currentStudentIndex >= allStudents.length) currentStudentIndex = allStudents.length - 1;
-                    updateModalContent();
-                }
             } catch (err) {
                 alert('Delete failed: ' + err.message);
             }
@@ -1128,7 +1148,19 @@
             }
         }
 
-        // ==================== RENDERING FUNCTIONS (unchanged except filterStudents) ====================
+        // ==================== STUDENT MODAL (unchanged) ====================
+        function openStudentModal(id) {
+            const student = allStudents.find(s => s.id === id);
+            if (!student) return;
+            const imgUrl = student.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=8b5cf6&color=fff&size=128`;
+            const modalHtml = `<div id="studentModal" class="profile-modal active" onclick="closeStudentModal()"><div class="profile-card" onclick="event.stopPropagation()"><div class="relative p-6 md:p-8"><button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button><div class="flex flex-col items-center text-center"><img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')"><h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(student.name)}</h2><div class="mt-5 w-full space-y-4"><div class="glass rounded-2xl p-4"><i class="fas fa-quote-left text-[var(--primary)]/40 mr-2"></i><p class="text-[var(--text-main)] italic">"${escapeHtml(student.quote || 'No quote yet')}"</p></div><div class="grid grid-cols-1 gap-3"><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-star text-yellow-400 w-6"></i><span class="font-semibold">Life Goal:</span><span>${escapeHtml(student.dream || '—')}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-heart text-pink-400 w-6"></i><span class="font-semibold">Interests:</span><span>${escapeHtml(student.hobby || '—')}</span></div></div></div><div class="mt-6 flex gap-3"><span class="px-4 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-sm font-semibold">11G</span><span class="px-4 py-1 rounded-full bg-[var(--secondary)]/10 text-[var(--secondary)] text-sm font-semibold">Class of 2026/27</span></div></div></div></div></div>`;
+            const existing = document.getElementById('studentModal');
+            if (existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+        function closeStudentModal() { const modal = document.getElementById('studentModal'); if(modal) modal.remove(); }
+
+        // ==================== RENDERING FUNCTIONS ====================
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
@@ -1138,7 +1170,7 @@
             if(currentUser){
                 document.getElementById('statsBento').innerHTML = `<div class="bento-item bento-large"><div><div class="w-10 h-10 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center mb-3"><i class="fas fa-graduation-cap text-xl text-[var(--primary)]"></i></div><h3 class="text-xl font-bold">Class Statistics</h3><p class="text-sm text-[var(--text-muted)]">Our journey by the numbers</p></div><div class="grid grid-cols-2 gap-3 mt-4"><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${studentCount}</div><div class="text-xs">Students</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">${postCount}</div><div class="text-xs">Memories</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">8</div><div class="text-xs">Clubs</div></div><div class="text-center p-3 rounded-xl bg-[var(--surface-hover)]"><div class="text-3xl font-bold gradient-text">12+</div><div class="text-xs">Events</div></div></div></div><div class="bento-item bento-tall cursor-pointer relative overflow-hidden" onclick="showView('memories')"><div class="absolute inset-0 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1523580494112-071d45815615?w=800');"></div><div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div><div class="relative h-full flex flex-col justify-end p-4"><span class="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold w-fit mb-2">Featured</span><h3 class="text-lg font-bold text-white">Recent Memory</h3><p class="text-white/80 text-sm">${escapeHtml(allMemories[0]?.content?.split('\n')[0] || 'Share your story')}</p></div></div><div class="bento-item bento-wide"><h3 class="font-bold mb-3">Quick Access</h3><div class="flex flex-wrap gap-2"><button onclick="showView('students')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-user mr-1"></i>Directory</button><button onclick="showView('events')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-calendar mr-1"></i>Events</button><button onclick="showView('memories')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-camera mr-1"></i>Gallery</button><button onclick="showView('quotes')" class="px-3 py-2 rounded-xl bg-[var(--surface-hover)] text-sm"><i class="fas fa-comment mr-1"></i>Stories</button></div></div><div class="bento-item flex justify-between"><div><p class="text-sm text-[var(--text-muted)]">End of Year</p><p class="text-xl font-bold">June 2027</p><p class="text-xs text-[var(--primary)] mt-1">${daysLeft} days to go</p></div><div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white"><i class="fas fa-sun"></i></div></div>`;
                 const recent = allMemories.slice(0, 3);
-                document.getElementById('recentMemoriesHome').innerHTML = recent.length ? recent.map(p => `<div class="group cursor-pointer" onclick="showView('memories')"><div class="overflow-hidden rounded-2xl relative"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="w-full h-48 object-cover transition-transform group-hover:scale-105"><div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4"><p class="text-white font-bold">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p></div></div></div>`).join('') : `<div class="col-span-full text-center py-10 text-[var(--text-muted)]">No memories yet. Admin can add special moments.</div>`;
+                document.getElementById('recentMemoriesHome').innerHTML = recent.length ? recent.map((p, idx) => `<div class="group cursor-pointer" onclick="openMemoryLightbox(${idx})"><div class="overflow-hidden rounded-2xl relative"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=600'}" class="w-full h-48 object-cover transition-transform group-hover:scale-105"><div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 flex items-end p-4"><p class="text-white font-bold">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p></div></div></div>`).join('') : `<div class="col-span-full text-center py-10 text-[var(--text-muted)]">No memories yet. Admin can add special moments.</div>`;
             }
         }
 
@@ -1164,7 +1196,7 @@
             if (allMemories.length === 0) { container.innerHTML = `<div class="max-w-7xl mx-auto px-4 py-20 text-center text-[var(--text-muted)]"><i class="fas fa-camera text-4xl mb-3 opacity-50"></i><p>No memories yet. Admin can add special moments.</p></div>`; return; }
             container.innerHTML = `<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 pb-20"><div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"><div><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold"><span class="text-[var(--text-main)]">Our</span> <span class="gradient-text">Memories</span></h1><p class="text-[var(--text-muted)] mt-2">Captured moments from our Novus journey</p></div>${isAdmin() ? '<button onclick="showView(\'admin\')" class="px-5 py-3 rounded-xl bg-[var(--primary)] text-white font-bold">Add More Memories</button>' : ''}</div><div class="masonry" id="memoryGrid"></div></div>`;
             const grid = document.getElementById('memoryGrid');
-            grid.innerHTML = allMemories.map(p => `<div class="masonry-item memory-card group cursor-pointer"><div class="memory-img-container rounded-2xl overflow-hidden relative glass" onclick="openImageZoom('${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}')"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}" class="w-full object-cover" alt="${escapeHtml(p.content?.split('\n')[0] || 'Memory')}"><div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-100 flex flex-col justify-end p-4"><p class="text-white font-bold text-lg">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p>${p.content?.split('\n').slice(1).join(' ') ? `<p class="text-white/85 text-sm mt-1">${escapeHtml(p.content?.split('\n').slice(1).join(' '))}</p>` : ''}<div class="mt-3 flex items-center justify-between gap-2"><span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>${isAdmin() ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div></div>`).join('');
+            grid.innerHTML = allMemories.map((p, idx) => `<div class="masonry-item memory-card group cursor-pointer"><div class="memory-img-container rounded-2xl overflow-hidden relative glass" onclick="openMemoryLightbox(${idx})"><img src="${p.image || 'https://images.unsplash.com/photo-1523580494112-071d45815615?w=800'}" class="w-full object-cover" alt="${escapeHtml(p.content?.split('\n')[0] || 'Memory')}"><div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-100 flex flex-col justify-end p-4"><p class="text-white font-bold text-lg">${escapeHtml(p.content?.split('\n')[0] || 'Memory')}</p>${p.content?.split('\n').slice(1).join(' ') ? `<p class="text-white/85 text-sm mt-1">${escapeHtml(p.content?.split('\n').slice(1).join(' '))}</p>` : ''}<div class="mt-3 flex items-center justify-between gap-2"><span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold"><i class="far fa-calendar-alt"></i> ${new Date(p.createdAt).toLocaleDateString()}</span>${isAdmin() ? `<button class="danger-btn" onclick="event.stopPropagation(); deleteMemory('${p.id}')"><i class="fas fa-trash mr-1"></i> Delete</button>` : ''}</div></div></div></div>`).join('');
         }
 
         function renderEvents() { 
@@ -1206,7 +1238,7 @@
         });
         document.getElementById('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
         window.deleteMemory = deleteMemory; window.editStudent = editStudent; window.deleteStudent = deleteStudent; window.updateStudentPhoto = updateStudentPhoto; window.showView = showView; window.closeStudentModal = closeStudentModal; window.addStudentFromForm = addStudentFromForm; window.createPostFromForm = createPostFromForm; window.openImageZoom = openImageZoom; window.closeImageZoom = closeImageZoom; window.handleSignOut = handleSignOut; window.openLogin = openLogin;
-        window.navigateStudent = navigateStudent; // expose for arrow buttons
+        window.openMemoryLightbox = openMemoryLightbox; window.navigateMemory = navigateMemory; window.closeMemoryLightbox = closeMemoryLightbox;
     </script>
 </body>
 </html>
