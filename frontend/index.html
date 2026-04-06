@@ -304,6 +304,35 @@
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
             max-height: 90vh;
             overflow-y: auto;
+            position: relative;
+        }
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--surface-solid);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-main);
+            border: 1px solid var(--border-line);
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        .nav-arrow:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .nav-arrow.prev { left: -20px; }
+        .nav-arrow.next { right: -20px; }
+        @media (max-width: 640px) {
+            .nav-arrow.prev { left: -10px; width: 32px; height: 32px; }
+            .nav-arrow.next { right: -10px; width: 32px; height: 32px; }
         }
         .file-upload-btn {
             display: inline-block;
@@ -594,6 +623,10 @@
         let allStudents = [];
         let allMemories = [];
 
+        // For student modal navigation
+        let currentStudentIndex = 0;
+        let currentModalElement = null;
+
         function escapeHtml(str = '') {
             return String(str)
                 .replace(/&/g, '&amp;')
@@ -824,7 +857,95 @@
             closeMobileSidebar();
         }
 
-        // ==================== FIXED: UPDATE STUDENT PHOTO WITH COMPRESSION ====================
+        // ========== STUDENT MODAL WITH NAVIGATION ==========
+        function openStudentModal(id) {
+            const index = allStudents.findIndex(s => s.id === id);
+            if (index === -1) return;
+            currentStudentIndex = index;
+            // Remove existing modal if any
+            if (currentModalElement) {
+                currentModalElement.remove();
+                currentModalElement = null;
+            }
+            // Create modal container
+            const modalDiv = document.createElement('div');
+            modalDiv.id = 'studentModal';
+            modalDiv.className = 'profile-modal active';
+            modalDiv.onclick = (e) => {
+                if (e.target === modalDiv) closeStudentModal();
+            };
+            // Build inner HTML with arrows
+            modalDiv.innerHTML = `
+                <div class="profile-card" onclick="event.stopPropagation()">
+                    <div class="nav-arrow prev" onclick="navigateStudent(-1)"><i class="fas fa-chevron-left"></i></div>
+                    <div class="nav-arrow next" onclick="navigateStudent(1)"><i class="fas fa-chevron-right"></i></div>
+                    <div class="relative p-6 md:p-8">
+                        <button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+                        <div id="studentModalContent" class="flex flex-col items-center text-center">
+                            <!-- content will be filled dynamically -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalDiv);
+            currentModalElement = modalDiv;
+            updateModalContent();
+            // Keyboard navigation
+            const keyHandler = (e) => {
+                if (!currentModalElement) return;
+                if (e.key === 'ArrowLeft') navigateStudent(-1);
+                if (e.key === 'ArrowRight') navigateStudent(1);
+                if (e.key === 'Escape') closeStudentModal();
+            };
+            document.addEventListener('keydown', keyHandler);
+            modalDiv.addEventListener('remove', () => {
+                document.removeEventListener('keydown', keyHandler);
+            });
+        }
+
+        function updateModalContent() {
+            if (!currentModalElement) return;
+            const student = allStudents[currentStudentIndex];
+            if (!student) {
+                closeStudentModal();
+                return;
+            }
+            const imgUrl = student.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=8b5cf6&color=fff&size=128`;
+            const contentDiv = currentModalElement.querySelector('#studentModalContent');
+            contentDiv.innerHTML = `
+                <img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')">
+                <h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(student.name)}</h2>
+                <div class="mt-5 w-full space-y-4">
+                    <div class="glass rounded-2xl p-4"><i class="fas fa-quote-left text-[var(--primary)]/40 mr-2"></i><p class="text-[var(--text-main)] italic">"${escapeHtml(student.quote || 'No quote yet')}"</p></div>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-star text-yellow-400 w-6"></i><span class="font-semibold">Life Goal:</span><span>${escapeHtml(student.dream || '—')}</span></div>
+                        <div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-heart text-pink-400 w-6"></i><span class="font-semibold">Interests:</span><span>${escapeHtml(student.hobby || '—')}</span></div>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <span class="px-4 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-sm font-semibold">11G</span>
+                    <span class="px-4 py-1 rounded-full bg-[var(--secondary)]/10 text-[var(--secondary)] text-sm font-semibold">Class of 2026/27</span>
+                </div>
+            `;
+        }
+
+        function navigateStudent(delta) {
+            if (!allStudents.length) return;
+            let newIndex = currentStudentIndex + delta;
+            if (newIndex < 0) newIndex = allStudents.length - 1;
+            if (newIndex >= allStudents.length) newIndex = 0;
+            currentStudentIndex = newIndex;
+            updateModalContent();
+        }
+
+        function closeStudentModal() {
+            if (currentModalElement) {
+                currentModalElement.remove();
+                currentModalElement = null;
+            }
+        }
+
+        // ==================== ADMIN FUNCTIONS ====================
         async function updateStudentPhoto(id) {
             if (!isAdmin()) return alert('Only admin can change photos');
             const input = document.createElement('input');
@@ -837,30 +958,25 @@
                     alert('Please select an image file.');
                     return;
                 }
-                // Show loading indicator
                 const btn = document.activeElement;
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner"></span> Compressing...';
                 btn.disabled = true;
                 try {
-                    // Compress image to max 800x800, JPEG quality 0.7
                     const compressedBase64 = await compressImage(file, 800, 800, 0.7);
                     const response = await fetch(`${API_BASE}/profile/update/${id}`, {
                         method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-auth-token': token
-                        },
+                        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
                         body: JSON.stringify({ profileImage: compressedBase64 })
                     });
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(errorText || 'Upload failed');
-                    }
+                    if (!response.ok) throw new Error(await response.text());
                     alert('Photo updated successfully!');
                     await loadAllData();
+                    // If modal is open and showing this student, refresh it
+                    if (currentModalElement && allStudents[currentStudentIndex]?.id === id) {
+                        updateModalContent();
+                    }
                 } catch (err) {
-                    console.error('Photo update error:', err);
                     alert('Failed to update photo: ' + err.message);
                 } finally {
                     btn.innerHTML = originalText;
@@ -870,7 +986,6 @@
             input.click();
         }
 
-        // ==================== ADD STUDENT WITH COMPRESSION (optional but safe) ====================
         async function addStudentFromForm() {
             if (!isAdmin()) return alert('Only admin can add students');
             const name = document.getElementById('newName').value.trim();
@@ -893,9 +1008,7 @@
             formData.append('funFact', '');
             
             if (photoFile) {
-                // Compress image before adding to FormData
                 const compressedBase64 = await compressImage(photoFile, 800, 800, 0.7);
-                // Convert base64 to Blob to append as file (optional, but FormData with Blob works)
                 const blob = await (await fetch(compressedBase64)).blob();
                 formData.append('profileImage', blob, 'profile.jpg');
             }
@@ -942,6 +1055,10 @@
                     })
                 });
                 await loadAllData();
+                // If modal is open and showing this student, refresh it
+                if (currentModalElement && allStudents[currentStudentIndex]?.id === id) {
+                    updateModalContent();
+                }
             } catch (err) {
                 alert('Update failed: ' + err.message);
             }
@@ -953,12 +1070,19 @@
             try {
                 await authFetch(`/profile/deactivate/${id}`, { method: 'DELETE' });
                 await loadAllData();
+                // If the deleted student was the one currently viewed, close modal
+                if (currentModalElement && allStudents[currentStudentIndex]?.id === id) {
+                    closeStudentModal();
+                } else if (currentModalElement && allStudents.length > 0) {
+                    // Adjust index if needed
+                    if (currentStudentIndex >= allStudents.length) currentStudentIndex = allStudents.length - 1;
+                    updateModalContent();
+                }
             } catch (err) {
                 alert('Delete failed: ' + err.message);
             }
         }
 
-        // ==================== CREATE MEMORY (unchanged, works with FormData) ====================
         async function createPostFromForm() {
             if (!isAdmin()) return alert('Only admin can create memories');
             const title = document.getElementById('postTitle').value.trim();
@@ -968,7 +1092,6 @@
             const formData = new FormData();
             formData.append('content', `${title}\n${content}`);
             if (imageFile) {
-                // Optionally compress memory images to avoid large payloads
                 const compressedBase64 = await compressImage(imageFile, 1200, 1200, 0.8);
                 const blob = await (await fetch(compressedBase64)).blob();
                 formData.append('image', blob, 'memory.jpg');
@@ -1005,7 +1128,7 @@
             }
         }
 
-        // ==================== RENDERING FUNCTIONS (unchanged) ====================
+        // ==================== RENDERING FUNCTIONS (unchanged except filterStudents) ====================
         function renderHome() {
             const studentCount = allStudents.length;
             const postCount = allMemories.length;
@@ -1034,17 +1157,6 @@
             container.innerHTML = filtered.map(s => `<div class="student-card cursor-pointer" onclick="openStudentModal('${s.id}')"><img src="${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}" class="w-32 h-32 rounded-full object-cover border-4 border-[var(--primary)] shadow-lg student-profile-img" onclick="event.stopPropagation(); openImageZoom('${s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`}')"><h3 class="font-bold text-xl text-[var(--text-main)] mt-4 text-center">${escapeHtml(s.name)}</h3><p class="text-[var(--text-muted)] text-sm mt-2 text-center italic">"${escapeHtml(s.quote || 'No quote yet')}"</p></div>`).join('');
         }
         window.filterStudents = (q) => renderStudentGrid(q);
-
-        function openStudentModal(id) {
-            const s = allStudents.find(st => st.id === id);
-            if (!s) return;
-            const imgUrl = s.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=8b5cf6&color=fff&size=128`;
-            const modalHtml = `<div id="studentModal" class="profile-modal active" onclick="closeStudentModal()"><div class="profile-card" onclick="event.stopPropagation()"><div class="relative p-6 md:p-8"><button onclick="closeStudentModal()" class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-main)] w-8 h-8 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button><div class="flex flex-col items-center text-center"><img src="${imgUrl}" class="w-40 h-40 rounded-full object-cover border-4 border-[var(--primary)] shadow-xl mb-4 student-profile-img" onclick="openImageZoom('${imgUrl}')"><h2 class="text-2xl md:text-3xl font-bold text-[var(--text-main)]">${escapeHtml(s.name)}</h2><div class="mt-5 w-full space-y-4"><div class="glass rounded-2xl p-4"><i class="fas fa-quote-left text-[var(--primary)]/40 mr-2"></i><p class="text-[var(--text-main)] italic">"${escapeHtml(s.quote || 'No quote yet')}"</p></div><div class="grid grid-cols-1 gap-3"><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-star text-yellow-400 w-6"></i><span class="font-semibold">Life Goal:</span><span>${escapeHtml(s.dream || '—')}</span></div><div class="flex items-center gap-3 bg-[var(--surface-hover)] p-3 rounded-xl"><i class="fas fa-heart text-pink-400 w-6"></i><span class="font-semibold">Interests:</span><span>${escapeHtml(s.hobby || '—')}</span></div></div></div><div class="mt-6 flex gap-3"><span class="px-4 py-1 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] text-sm font-semibold">11G</span><span class="px-4 py-1 rounded-full bg-[var(--secondary)]/10 text-[var(--secondary)] text-sm font-semibold">Class of 2026/27</span></div></div></div></div></div>`;
-            const existing = document.getElementById('studentModal');
-            if (existing) existing.remove();
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
-        window.closeStudentModal = () => { const modal = document.getElementById('studentModal'); if(modal) modal.remove(); };
 
         function renderMemories() {
             const container = document.getElementById('view-memories');
@@ -1094,6 +1206,7 @@
         });
         document.getElementById('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
         window.deleteMemory = deleteMemory; window.editStudent = editStudent; window.deleteStudent = deleteStudent; window.updateStudentPhoto = updateStudentPhoto; window.showView = showView; window.closeStudentModal = closeStudentModal; window.addStudentFromForm = addStudentFromForm; window.createPostFromForm = createPostFromForm; window.openImageZoom = openImageZoom; window.closeImageZoom = closeImageZoom; window.handleSignOut = handleSignOut; window.openLogin = openLogin;
+        window.navigateStudent = navigateStudent; // expose for arrow buttons
     </script>
 </body>
 </html>
